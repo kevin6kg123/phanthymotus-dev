@@ -25,7 +25,13 @@ TOOLS[0].update(topic_in=[{'format':'image/jpeg','desc':'camera image input'}],t
 class PosePerceptionPlugin:
  PREFIX='pose'
  def __init__(self,plugin_cfg,namespace,executor):
-  self.cfg=dict(plugin_cfg);self.namespace=namespace;self.executor=executor;self._runtime=None;self._lock=threading.RLock();self._nodes={};self._last=None;self._pub_node=None;self._pub=None;self._on_demand_started=False
+  self.cfg=dict(plugin_cfg);self.namespace=namespace;self.executor=executor;self._runtime=None;self._lock=threading.RLock();self._nodes={};self._last=None;self._pub_node=None;self._pub=None;self._on_demand_started=False;self._load_error=None
+  threading.Thread(target=self._preload,daemon=True,name='action314-preload').start()
+ def _preload(self):
+  try:
+   started=time.perf_counter();self._model();log.info('[action314] models loaded in %.2fs',time.perf_counter()-started)
+  except Exception as error:
+   self._load_error=type(error).__name__+': '+str(error);log.exception('[action314] model preload failed')
  def get_tools(self):return TOOLS
  def _model(self):
   with self._lock:
@@ -65,7 +71,7 @@ class PosePerceptionPlugin:
   if not url:raise ValueError('video_path, image_path, file_path or url is required')
   parsed=urllib.parse.urlparse(url)
   if parsed.scheme not in {'http','https'}:raise ValueError('Only http(s) URL inputs are supported')
-  upload_root=Path(os.environ.get('ACTION314_TEMP_DIR',str(ensure_models()/'.uploads')));upload_root.mkdir(parents=True,exist_ok=True)
+  upload_root=Path(os.environ.get('ACTION314_TEMP_DIR',tempfile.gettempdir()));upload_root.mkdir(parents=True,exist_ok=True)
   suffix=Path(parsed.path).suffix.lower() or '.mp4'
   with tempfile.NamedTemporaryFile(dir=upload_root,suffix=suffix) as stream:
    with urllib.request.urlopen(url,timeout=30) as response:
@@ -84,10 +90,10 @@ class PosePerceptionPlugin:
    if action in {'recognize_by_video','recognize_video','recognize_by_photo','recognize_by_url','recognize'}:return self._recognize(args)
    if action=='list_actions':
     labels=json.loads((Path(__file__).parent/'action314/runtime.json').read_text())['labels'];return {'ok':True,'activities':[{'name':r['activity'],'name_zh':r['activity_zh']} for r in labels],'count':126}
-   if action=='info':return {'state':'running' if self._nodes or self._on_demand_started else 'ready','backend':'action314_onnx_cpu','model_loaded':self._runtime is not None,'supported_actions':126,'output_topic':'/perception/pose','instances':list(self._nodes),'stream_errors':sum(n.error_count for n in self._nodes.values()),'last_result':self._last,'full_video_only_score':True,'model_bytes':23208501,'jp5_verified':False}
+   if action=='info':return {'state':'running' if self._nodes or self._on_demand_started else 'ready','backend':'action314_onnx_cpu','model_loaded':self._runtime is not None,'load_error':self._load_error,'supported_actions':126,'output_topic':'/perception/pose','instances':list(self._nodes),'stream_errors':sum(n.error_count for n in self._nodes.values()),'last_result':self._last,'full_video_only_score':True,'model_bytes':23208501,'jp5_verified':False}
    if action=='config':return {'status':'configured','backend':'action314_onnx_cpu','note':'Fixed validated model, preprocessing and sampling are retained.'}
    if action=='start':
-    self._model();topic=args.get('input_topic','');key=args.get('instance_id') or topic or '_default'
+    topic=args.get('input_topic','');key=args.get('instance_id') or topic or '_default'
     if not topic:self._on_demand_started=True;return {'state':'running','mode':'on_demand','output_topic':'/perception/pose'}
     if key not in self._nodes:self._nodes[key]=_Camera(self,topic,key)
     return {'state':'running','input_topic':topic,'output_topic':self._nodes[key].output_topic,'scope':'observed-prefix stream, not full-video validation'}

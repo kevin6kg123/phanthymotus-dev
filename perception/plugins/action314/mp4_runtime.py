@@ -120,16 +120,12 @@ class MP4Recognizer:
                         if line.startswith('MemAvailable:'): avail = int(line.split()[1]) // 1024
                     if avail < int(os.environ.get('ACTION314_TRT_MIN_MB', '1200')):
                         raise RuntimeError('not enough memory to build engines (%d MB available)' % avail)
-                    t0 = time.time(); logger = trt.Logger(trt.Logger.ERROR)
-                    for n in names:
-                        b = trt.Builder(logger); net = b.create_network(0); parser = trt.OnnxParser(net, logger)
-                        if not parser.parse((self.root / (n + '.onnx')).read_bytes()): raise RuntimeError('onnx parse failed: ' + n)
-                        cfg = b.create_builder_config(); cfg.set_memory_pool_limit(trt.MemoryPoolType.WORKSPACE, 256 << 20)
-                        cfg.set_flag(trt.BuilderFlag.FP16); cfg.builder_optimization_level = int(os.environ.get('ACTION314_TRT_OPT_LEVEL', '1'))
-                        plan = b.build_serialized_network(net, cfg)
-                        if plan is None: raise RuntimeError('engine build failed: ' + n)
-                        tmp = d / ('.%s.%d' % (n, os.getpid())); tmp.write_bytes(bytes(plan)); os.replace(tmp, d / (n + '.plan'))
-                        del plan, cfg, parser, net, b
+                    t0 = time.time(); import subprocess, sys as _sys
+                    r = subprocess.run([_sys.executable, str(Path(__file__).with_name('trt_build.py')), str(self.root), str(d),
+                                        os.environ.get('ACTION314_TRT_OPT_LEVEL', '1')] + names,
+                                       capture_output=True, text=True, timeout=float(os.environ.get('ACTION314_TRT_BUILD_TIMEOUT', '1500')))
+                    if r.returncode != 0 or not all((d / (n + '.plan')).is_file() for n in names):
+                        raise RuntimeError('engine build failed: ' + (r.stderr or r.stdout)[-300:])
                     (d / 'done').write_text('%.1f' % (time.time() - t0))
                     log.info('[action314] TensorRT %s plans built in %.1fs', trt.__version__, time.time() - t0)
             models = [_TrtModel(d / (n + '.plan')) for n in names]

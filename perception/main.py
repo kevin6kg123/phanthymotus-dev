@@ -591,6 +591,10 @@ async def _ws_asr_handler(websocket):
          {"text": "识别结果"}
       4. Client sends text "flush" to force-flush remaining speech
     """
+    if not _load_config().get("plugins", {}).get("asr", {}).get("enabled", False):
+        await websocket.send(json.dumps({"type": "asr_error", "payload": {"error": "ASR is disabled in this action-recognition task profile; use MCP pose"}}))
+        await websocket.close(code=1000)
+        return
     from plugins.asr import VadSession, _build_asr_adapter, _pcm16_to_wav
     import websockets
 
@@ -719,8 +723,8 @@ def main():
     global _bundle
 
     cfg      = _load_config()
-    mcp_port = int(cfg.get("mcp_port", 15720))
-    ws_port  = int(cfg.get("ws_port",  15721))
+    mcp_port = int(os.environ.get("MCP_PORT") or cfg.get("mcp_port", 15720))
+    ws_port  = int(os.environ.get("WS_PORT") or cfg.get("ws_port", 15721))
 
     log.info(f"perception bundle starting, mcp_port={mcp_port}, ws_port={ws_port}")
     log.info(f"config: plugins.asr.enabled={cfg.get('plugins',{}).get('asr',{}).get('enabled')}, "
@@ -776,7 +780,8 @@ def main():
     # Start WebSocket ASR server in a separate thread
     threading.Thread(target=_start_ws_thread, args=(ws_port,), daemon=True, name="ws_asr").start()
 
-    _start_registration(mcp_port, "Perception Stack", "perception")
+    if cfg.get("register_with_agent_core", True):
+        _start_registration(mcp_port, "Perception Stack", "perception")
 
     server = ThreadingHTTPServer(("", mcp_port), make_handler())
     log.info(f"MCP server → http://0.0.0.0:{mcp_port}")

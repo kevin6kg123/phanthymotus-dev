@@ -1,0 +1,13 @@
+{
+  "url": "https://github.com/kevin6kg123/phanthymotus-dev/releases/download/action314-cpu-v1/action314-models-v1.tar.gz",
+  "archive_sha256": "a981210b62ba1efd467d0882976a8d0722cff661c0cea08f342283693e9db6d1",
+  "max_download_bytes": 32000000,
+  "files": {
+    "pose.onnx": "10ab88a4863cc86ed7872f9d5db4c67d107148aa9ec22fb6a8d91c2be2666b49",
+    "joint.onnx": "13b7fb6598fc6bf415118833630ec49c9697cf44fe427faefa3005f7be7a6d68",
+    "bone.onnx": "7a76d42592de63a7f64054361f8c8446c9f6400c4543fa4f134ddec1081107bb",
+    "runtime.json": "9eff81956d3710d9dfcfd780560cb4497636daef82c6bfe13f12996d4afe7f06"
+  },
+  "total_model_bytes": 23208501,
+  "parameters": 5686424
+}

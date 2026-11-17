@@ -41,6 +41,7 @@ class PosePerceptionPlugin:
   model=self._model();values=np.asarray(poses,dtype=np.float32);values=values[np.linspace(0,len(values)-1,100).round().astype(int)][None];prob=np.zeros(126,dtype=np.float64)
   for session,spec in zip(model.bodies,model.config['classifiers']):
    logits=session.run(None,{'pose':values})[0][0].astype(np.float64)/spec['temperature'];logits-=logits.max();p=np.exp(logits);p/=p.sum();prob+=spec['weight']*p
+  if model.none_index is not None:prob[model.none_index]=0.
   index=int(prob.argmax());label=model.config['labels'][index]
   return {'timestamp':time.time(),'count':1,'persons':[{'id':1,'position':[0.,0.],'activity':label['activity'],'activity_zh':label['activity_zh'],'activity_score':float(prob[index])}],'latency_ms':0.}
  def _pose(self,frame):
@@ -130,7 +131,7 @@ class PosePerceptionPlugin:
    'topic_in':[{'topic':topic,'format':'image/jpeg'}] if topic else [],
    'topic_out':[{'topic':out,'format':'data/json'},{'topic':out+'/skeleton','format':'sensor/pose2d'}] if (topic or nodes) else [],
    'desc':'126-class action recognition (CPU ONNX pose + ST-GCN++)','hands':False,
-   'backend':'action314_onnx_cpu','model_loaded':self._runtime is not None,'supported_actions':126,'last_result':self._last}
+   'backend':'action314_onnx_cpu','model_loaded':self._runtime is not None,'supported_actions':126,'device':getattr(self._runtime,'device',None),'device_error':getattr(self._runtime,'device_error',None),'last_result':self._last}
   preds={k:n.last_prediction for k,n in nodes.items() if n.last_prediction}
   if preds:info['last_prediction']=preds
   return info

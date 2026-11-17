@@ -4,7 +4,7 @@ Backends, in order: TensorRT engines shipped for this TensorRT family (models/tr
 ONNX Runtime CUDA, ONNX Runtime CPU. Every backend is warmed up before it is accepted; any
 failure falls through to the next one. ACTION314_DEVICE=trt|cuda|cpu pins the first choice.
 """
-import hashlib, json, logging, math, os, time
+import fcntl, hashlib, json, logging, math, os, threading, time
 from pathlib import Path
 import cv2, numpy as np
 try:
@@ -67,6 +67,8 @@ class MP4Recognizer:
         if self.device is None:
             raise RuntimeError('no usable backend: %s' % self.device_errors)
         log.info('[action314] backend=%s', self.device)
+        if self.device != 'trt' and os.environ.get('ACTION314_TRT_BUILD', '1') == '1':
+            threading.Thread(target=self._upgrade, daemon=True, name='action314-trt').start()
         labels = [x['activity'] for x in c['labels']]
         self.none_index = labels.index('none') if 'none' in labels and os.environ.get('ACTION314_ALLOW_NONE') != '1' else None
 
@@ -94,6 +96,54 @@ class MP4Recognizer:
             lg = b(np.zeros((1, c.get('pose_frames', 100), 17, 3), np.float32))
             if lg.shape != (1, 126) or not np.isfinite(lg).all(): raise RuntimeError('bad classifier output %s' % (lg.shape,))
         self.front, self.bodies = front, bodies
+
+    def _plans_dir(self):
+        import tensorrt as trt
+        return Path(os.environ.get('ACTION314_TRT_CACHE', '/dev/shm/action314_trt')) / trt.__version__
+
+    def _upgrade(self):
+        """Build TensorRT plans once per host (shared /dev/shm + file lock), then hot-swap from CPU."""
+        try:
+            import tensorrt as trt
+            d = self._plans_dir(); d.mkdir(parents=True, exist_ok=True)
+            try:
+                idx = max(0, (int(os.environ.get('MCP_PORT', '15720')) - 15720) // 100)
+            except ValueError:
+                idx = 0
+            time.sleep(min(idx, 9) * float(os.environ.get('ACTION314_TRT_STAGGER_S', '3')))
+            c = self.config; names = [Path(c['pose_model']).stem] + [Path(x['file']).stem for x in c['classifiers']]
+            with open(d / '.lock', 'w') as lk:
+                fcntl.flock(lk, fcntl.LOCK_EX)
+                if not (d / 'done').exists():
+                    avail = 0
+                    for line in open('/proc/meminfo'):
+                        if line.startswith('MemAvailable:'): avail = int(line.split()[1]) // 1024
+                    if avail < int(os.environ.get('ACTION314_TRT_MIN_MB', '1200')):
+                        raise RuntimeError('not enough memory to build engines (%d MB available)' % avail)
+                    t0 = time.time(); logger = trt.Logger(trt.Logger.ERROR)
+                    for n in names:
+                        b = trt.Builder(logger); net = b.create_network(0); parser = trt.OnnxParser(net, logger)
+                        if not parser.parse((self.root / (n + '.onnx')).read_bytes()): raise RuntimeError('onnx parse failed: ' + n)
+                        cfg = b.create_builder_config(); cfg.set_memory_pool_limit(trt.MemoryPoolType.WORKSPACE, 256 << 20)
+                        cfg.set_flag(trt.BuilderFlag.FP16); cfg.builder_optimization_level = int(os.environ.get('ACTION314_TRT_OPT_LEVEL', '1'))
+                        plan = b.build_serialized_network(net, cfg)
+                        if plan is None: raise RuntimeError('engine build failed: ' + n)
+                        tmp = d / ('.%s.%d' % (n, os.getpid())); tmp.write_bytes(bytes(plan)); os.replace(tmp, d / (n + '.plan'))
+                        del plan, cfg, parser, net, b
+                    (d / 'done').write_text('%.1f' % (time.time() - t0))
+                    log.info('[action314] TensorRT %s plans built in %.1fs', trt.__version__, time.time() - t0)
+            models = [_TrtModel(d / (n + '.plan')) for n in names]
+            front, bodies = models[0], models[1:]
+            out = np.asarray(front(np.zeros((1, 3, 416, 416), np.float32)))
+            if out.shape[1] != 56: raise RuntimeError('unexpected pose output %s' % (out.shape,))
+            for b in bodies:
+                lg = b(np.zeros((1, self.config.get('pose_frames', 100), 17, 3), np.float32))
+                if lg.shape != (1, 126) or not np.isfinite(lg).all(): raise RuntimeError('bad classifier output')
+            self.front, self.bodies, self.device = front, bodies, 'trt'
+            log.info('[action314] backend=trt (runtime-built plans, hot swap)')
+        except Exception as e:
+            self.device_errors['trt_runtime'] = type(e).__name__ + ': ' + str(e)[:240]
+            log.warning('[action314] runtime TensorRT upgrade failed, staying on %s: %s', self.device, self.device_errors['trt_runtime'])
 
     def pose(self, frame):
         x, g = prepare_frame(frame)

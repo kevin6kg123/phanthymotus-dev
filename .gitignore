@@ -1,4 +1,12 @@
 # Environment
+# Action314 model weights are Release assets, never Git blobs.
+*.onnx
+*.pt
+*.pth
+*.engine
+action314-models*.tar.gz
+perception/.models/
+
 .env
 !.env.example
 

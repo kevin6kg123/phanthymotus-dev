@@ -20,11 +20,12 @@ TOOLS=[{'name':'pose','description':'Recognize one of 126 actions in a full MP4 
   'image_path':{'type':'string','format':'file','accept':'image/*,video/*','uploadTo':'mcp'},
   'file_path':{'type':'string'},'url':{'type':'string'},'input_topic':{'type':'string'},'instance_id':{'type':'string'}},'required':['action'],
  'x-action-params':{'recognize_by_video':{'params':['video_path'],'description':'Full MP4 action recognition'},'recognize_by_photo':{'params':['image_path'],'description':'Image or uploaded MP4 compatibility entry'},'recognize_by_url':{'params':['url'],'description':'Download image or MP4, bounded to 64MiB'},'start':{'params':['input_topic']},'stop':{'params':[]},'info':{'params':[]},'list_actions':{'params':[]}}}}]
+TOOLS[0].update(topic_in=[{'format':'image/jpeg','desc':'camera image input'}],topic_out=[{'format':'data/json','desc':'126-class action labels and confidence'}])
 
 class PosePerceptionPlugin:
  PREFIX='pose'
  def __init__(self,plugin_cfg,namespace,executor):
-  self.cfg=dict(plugin_cfg);self.namespace=namespace;self.executor=executor;self._runtime=None;self._lock=threading.RLock();self._nodes={};self._last=None;self._pub_node=None;self._pub=None
+  self.cfg=dict(plugin_cfg);self.namespace=namespace;self.executor=executor;self._runtime=None;self._lock=threading.RLock();self._nodes={};self._last=None;self._pub_node=None;self._pub=None;self._on_demand_started=False
  def get_tools(self):return TOOLS
  def _model(self):
   with self._lock:
@@ -83,19 +84,20 @@ class PosePerceptionPlugin:
    if action in {'recognize_by_video','recognize_video','recognize_by_photo','recognize_by_url','recognize'}:return self._recognize(args)
    if action=='list_actions':
     labels=json.loads((Path(__file__).parent/'action314/runtime.json').read_text())['labels'];return {'ok':True,'activities':[{'name':r['activity'],'name_zh':r['activity_zh']} for r in labels],'count':126}
-   if action=='info':return {'state':'running' if self._nodes else 'ready','backend':'action314_onnx_cpu','model_loaded':self._runtime is not None,'supported_actions':126,'output_topic':'/perception/pose','instances':list(self._nodes),'stream_errors':sum(n.error_count for n in self._nodes.values()),'last_result':self._last,'full_video_only_score':True,'model_bytes':23208501,'jp5_verified':False}
+   if action=='info':return {'state':'running' if self._nodes or self._on_demand_started else 'ready','backend':'action314_onnx_cpu','model_loaded':self._runtime is not None,'supported_actions':126,'output_topic':'/perception/pose','instances':list(self._nodes),'stream_errors':sum(n.error_count for n in self._nodes.values()),'last_result':self._last,'full_video_only_score':True,'model_bytes':23208501,'jp5_verified':False}
    if action=='config':return {'status':'configured','backend':'action314_onnx_cpu','note':'Fixed validated model, preprocessing and sampling are retained.'}
    if action=='start':
     self._model();topic=args.get('input_topic','');key=args.get('instance_id') or topic or '_default'
-    if not topic:return {'state':'running','mode':'on_demand','output_topic':'/perception/pose'}
+    if not topic:self._on_demand_started=True;return {'state':'running','mode':'on_demand','output_topic':'/perception/pose'}
     if key not in self._nodes:self._nodes[key]=_Camera(self,topic,key)
     return {'state':'running','input_topic':topic,'output_topic':self._nodes[key].output_topic,'scope':'observed-prefix stream, not full-video validation'}
    if action=='reset':
     for node in self._nodes.values():node.reset()
     self._last=None;return {'ok':True}
    if action=='stop':
-    key=args.get('instance_id');keys=[key] if key in self._nodes else list(self._nodes) if not key else []
+    instance_key=args.get('instance_id');keys=[instance_key] if instance_key in self._nodes else list(self._nodes) if not instance_key else []
     for key in keys:self._nodes.pop(key).close()
+    if not instance_key:self._on_demand_started=False
     return {'state':'idle'}
    return None
   except Exception as error:

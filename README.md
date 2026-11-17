@@ -1,5 +1,7 @@
 # Phanthy Motus
 
+This branch contains the Darvin #314 CPU action-recognition candidate. See [SUBMIT.md](SUBMIT.md) for the exact MCP/ROS2 interface, required hash-pinned model asset, tested JP6 scope and submission environment. The development Macro-F1 is60.62%, not an official leaderboard score. The parent project's general documentation follows below.
+
 [中文文档](README_zh.md) | [Official Website](https://motus.phanthy.com)
 
 **Give Embodied AI a Real Soul.** PhanthyMotus is a next-generation, open-source framework and platform for Embodied AI Agents. Built upon a robust ROS2 foundation, it seamlessly bridges diverse sensor inputs with advanced robot execution. By enabling flexible integration of World Models, LLMs, and VLMs, PhanthyMotus transforms traditional hardware into soulful, intelligent assistants capable of perceiving, thinking, and acting independently in the real world.

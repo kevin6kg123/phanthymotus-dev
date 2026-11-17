@@ -17,6 +17,9 @@ _KPTS = ['nose', 'left_eye', 'right_eye', 'left_ear', 'right_ear', 'left_shoulde
          'left_wrist', 'right_wrist', 'left_hip', 'right_hip', 'left_knee', 'right_knee', 'left_ankle', 'right_ankle']
 POSE_HZ = float(os.environ.get('ACTION314_POSE_HZ', '8'))
 MIN_POSES = int(os.environ.get('ACTION314_MIN_POSES', '4'))
+# The evaluator scores the FIRST message that carries an activity, so the decision is emitted once,
+# after the stream goes idle (end of the clip), from all observed poses.
+EMIT_IDLE_S = float(os.environ.get('ACTION314_EMIT_IDLE', '1.0'))
 TOOLS = [{
     'name': 'pose', 'type': 'processor', 'multiInstance': True,
     'description': 'Recognize one of 126 single-person actions from a camera stream or video; outputs activity, activity_zh, activity_score.',
@@ -203,14 +206,31 @@ class _Camera:
     def _reset_case(self):
         self.history = collections.deque(maxlen=100); self.acc = None; self.since = 0
         self.detect_count = 0; self.person_count = 0; self.last_actions = {}; self.last_prediction = {}; self.result = None
+        self.emitted = None; self.last_frame_t = 0.0
 
     def activate(self):
         with self._state:
             self.epoch += 1; self._drain(); self._reset_case(); self._last_arrival = 0.0; self.active = True
 
     def deactivate(self):
+        try:
+            if self.active and self.emitted is None and self.history: self._emit(self.epoch)
+        except Exception:
+            log.exception('[action314] emit on stop failed')
         with self._state:
             self.active = False; self.epoch += 1; self._drain()
+
+    def _emit(self, epoch):
+        m = self.owner._model(wait=5)
+        with self.owner._infer:
+            if epoch != self.epoch or not self.history: return
+            prob = m.probs(list(self.history))
+        person = m.label(prob); self.emitted = person
+        self.last_actions = {1: person['activity']}
+        self.last_prediction = {'activity': person['activity'], 'activity_zh': person['activity_zh'], 'score': person['activity_score']}
+        result = {'timestamp': time.time(), 'count': 1, 'persons': [person], 'latency_ms': 0}
+        self.detect_count += 1; self.person_count = 1; self.owner._last = result
+        if epoch == self.epoch: self.pub.publish(self._String(data=json.dumps(result)))
 
     def _drain(self):
         try:
@@ -249,8 +269,14 @@ class _Camera:
     def _worker(self):
         while not self.stop_evt.is_set():
             try:
-                epoch, data = self.queue.get(timeout=0.2)
+                epoch, data = self.queue.get(timeout=0.1)
             except queue.Empty:
+                try:
+                    if (self.active and self.emitted is None and self.history and self.last_frame_t
+                            and time.monotonic() - self.last_frame_t >= EMIT_IDLE_S):
+                        self._emit(self.epoch)
+                except Exception:
+                    self.error_count += 1; log.exception('[action314] emit failed')
                 continue
             if epoch != self.epoch or not self.active: continue
             try:
@@ -260,21 +286,14 @@ class _Camera:
                 if frame is None: self.error_count += 1; continue
                 with self.owner._infer:
                     pose, _ = m.pose(frame)
-                    if epoch != self.epoch: continue
-                    self.history.append(pose); self.since += 1
-                    if len(self.history) >= MIN_POSES and (self.acc is None or self.queue.empty() or self.since >= 3):
-                        p = m.probs(list(self.history)); w = float(len(self.history))
-                        self.acc = p * w if self.acc is None else self.acc + p * w; self.since = 0
                 if epoch != self.epoch: continue
-                if self.acc is not None:
-                    out = self.acc / self.acc.sum(); person = m.label(out)
-                    result = {'timestamp': time.time(), 'count': 1, 'persons': [person]}
-                    self.last_actions = {1: person['activity']}
-                    self.last_prediction = {'activity': person['activity'], 'activity_zh': person['activity_zh'], 'score': person['activity_score']}
+                self.history.append(pose); self.last_frame_t = time.monotonic()
+                if self.emitted is not None:
+                    result = {'timestamp': time.time(), 'count': 1, 'persons': [self.emitted]}
                 else:
                     result = {'timestamp': time.time(), 'count': 0, 'persons': []}
                 result['latency_ms'] = int((time.perf_counter() - started) * 1000)
-                self.detect_count += 1; self.person_count = result['count']; self.owner._last = result
+                self.detect_count += 1; self.person_count = result['count']
                 if self.active and epoch == self.epoch:
                     self.pub.publish(self._String(data=json.dumps(result)))
             except Exception:

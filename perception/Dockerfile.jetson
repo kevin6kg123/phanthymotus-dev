@@ -591,7 +591,7 @@ COPY perception/deploy/    /deploy/
 # action314: build FP16 TensorRT plans with this image's TensorRT so plan and runtime versions match.
 # Never fails the build; without a GPU at build time the plugin falls back to CPU.
 COPY perception/tools/action314_build_engines.py /work/tools/action314_build_engines.py
-RUN python3 /work/tools/action314_build_engines.py /work/plugins/action314/models --check || true
+RUN timeout 600 python3 /work/tools/action314_build_engines.py /work/plugins/action314/models --check || true
 
 # ── Thai frontend self-check, on the real interpreter ──────────────────────────
 # Runs the frontend that was just copied in, on the Python this image actually

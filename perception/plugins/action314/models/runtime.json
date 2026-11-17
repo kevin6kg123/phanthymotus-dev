@@ -898,13 +898,13 @@
   }
  ],
  "model_sha256": {
-  "bone.onnx": "3160cb005cc2dc3b32c8625d702142051c00cfc26bf66597bb6f3203819b5531",
-  "joint.onnx": "ed36b410fb920f3249b2c18cc253b67fbf7743f8634f3b3e0ddc9bcbcf944d09",
+  "bone.onnx": "5bfbf07e8242e1215850c32abd756da76c77c0dbc1b70ef3cf2bd7012a23d721",
+  "joint.onnx": "28010809931e1dd771ddff78c70e66d358b6dbf168cd44d4e5b0e825d166d055",
   "pose.onnx": "10ab88a4863cc86ed7872f9d5db4c67d107148aa9ec22fb6a8d91c2be2666b49"
  },
  "pose_hz": 8,
  "max_pose_frames": 100,
  "pose_frames": 100,
- "scope": "v3: full train+val data, sparse-observation augmentation; development candidate",
+ "scope": "v6: classifiers trained on official train+val + CTPGesture + NTU120 2D skeletons with sparse-observation augmentation",
  "independent_test_confirmed": false
 }

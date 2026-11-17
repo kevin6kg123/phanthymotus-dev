@@ -23,7 +23,7 @@ try:
             raise RuntimeError('parse failed %s: %s' % (name, [str(parser.get_error(i)) for i in range(parser.num_errors)]))
         cfg = builder.create_builder_config(); cfg.set_memory_pool_limit(trt.MemoryPoolType.WORKSPACE, 256 << 20)
         cfg.set_flag(trt.BuilderFlag.FP16)
-        cfg.builder_optimization_level = int(os.environ.get('ACTION314_TRT_OPT_LEVEL', '2'))
+        cfg.builder_optimization_level = int(os.environ.get('ACTION314_TRT_OPT_LEVEL', '1'))
         plan = builder.build_serialized_network(net, cfg)
         if plan is None: raise RuntimeError('build failed ' + name)
         (out / (name + '.plan')).write_bytes(bytes(plan))

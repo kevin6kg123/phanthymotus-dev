@@ -1,910 +1,910 @@
 {
-  "cpu_threads": 2,
-  "pose_model": "pose.onnx",
-  "classifiers": [
-    {
-      "file": "joint.onnx",
-      "weight": 0.4,
-      "temperature": 2.0
-    },
-    {
-      "file": "bone.onnx",
-      "weight": 0.6,
-      "temperature": 2.0
-    }
-  ],
-  "labels": [
-    {
-      "official_id": "1",
-      "train_index": "0",
-      "activity": "drink water",
-      "activity_zh": "喝水",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "2",
-      "train_index": "1",
-      "activity": "eat meal",
-      "activity_zh": "吃东西",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "3",
-      "train_index": "2",
-      "activity": "brush teeth",
-      "activity_zh": "刷牙",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "4",
-      "train_index": "3",
-      "activity": "brush hair",
-      "activity_zh": "梳头",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "5",
-      "train_index": "4",
-      "activity": "wear jacket",
-      "activity_zh": "穿外套",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "6",
-      "train_index": "5",
-      "activity": "take off jacket",
-      "activity_zh": "脱外套",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "7",
-      "train_index": "6",
-      "activity": "wear a shoe",
-      "activity_zh": "穿鞋",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "8",
-      "train_index": "7",
-      "activity": "take off a shoe",
-      "activity_zh": "脱鞋",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "9",
-      "train_index": "8",
-      "activity": "wear on glasses",
-      "activity_zh": "戴眼镜",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "10",
-      "train_index": "9",
-      "activity": "take off glasses",
-      "activity_zh": "摘眼镜",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "11",
-      "train_index": "10",
-      "activity": "put on a hat",
-      "activity_zh": "戴帽子",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "12",
-      "train_index": "11",
-      "activity": "take off a hat",
-      "activity_zh": "摘帽子",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "13",
-      "train_index": "12",
-      "activity": "cutting something",
-      "activity_zh": "切东西",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "14",
-      "train_index": "13",
-      "activity": "pouring something",
-      "activity_zh": "倒液体",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "15",
-      "train_index": "14",
-      "activity": "cooking something",
-      "activity_zh": "烹饪",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "16",
-      "train_index": "15",
-      "activity": "opening refrigerator",
-      "activity_zh": "打开冰箱",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "17",
-      "train_index": "16",
-      "activity": "washing dishes",
-      "activity_zh": "洗碗",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "18",
-      "train_index": "17",
-      "activity": "cleaning toilet",
-      "activity_zh": "清洁马桶",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "19",
-      "train_index": "18",
-      "activity": "cleaning windows",
-      "activity_zh": "擦洗窗户",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "20",
-      "train_index": "19",
-      "activity": "doing laundry",
-      "activity_zh": "洗衣服",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "21",
-      "train_index": "20",
-      "activity": "folding clothes",
-      "activity_zh": "叠衣服",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "22",
-      "train_index": "21",
-      "activity": "hand washing clothes",
-      "activity_zh": "手洗衣服",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "23",
-      "train_index": "22",
-      "activity": "ironing",
-      "activity_zh": "熨衣服",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "24",
-      "train_index": "23",
-      "activity": "making the bed",
-      "activity_zh": "整理床铺",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "25",
-      "train_index": "24",
-      "activity": "mopping floor",
-      "activity_zh": "拖地",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "26",
-      "train_index": "25",
-      "activity": "moving furniture",
-      "activity_zh": "搬动家具",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "27",
-      "train_index": "26",
-      "activity": "sweeping floor",
-      "activity_zh": "扫地",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "28",
-      "train_index": "27",
-      "activity": "watering plants",
-      "activity_zh": "给植物浇水",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "29",
-      "train_index": "28",
-      "activity": "rub two hands",
-      "activity_zh": "搓手",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "30",
-      "train_index": "29",
-      "activity": "flick hair",
-      "activity_zh": "拨头发",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "31",
-      "train_index": "30",
-      "activity": "wipe face",
-      "activity_zh": "擦脸",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "32",
-      "train_index": "31",
-      "activity": "cutting nails",
-      "activity_zh": "剪指甲",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "33",
-      "train_index": "32",
-      "activity": "sniff/smell",
-      "activity_zh": "闻气味",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "34",
-      "train_index": "33",
-      "activity": "apply cream on face",
-      "activity_zh": "脸上涂面霜",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "35",
-      "train_index": "34",
-      "activity": "apply cream on hand",
-      "activity_zh": "手上涂护手霜",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "36",
-      "train_index": "35",
-      "activity": "yawn",
-      "activity_zh": "打哈欠",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "37",
-      "train_index": "36",
-      "activity": "stretch oneself",
-      "activity_zh": "伸懒腰",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "38",
-      "train_index": "37",
-      "activity": "none",
-      "activity_zh": "无动作",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "39",
-      "train_index": "38",
-      "activity": "reading",
-      "activity_zh": "看书",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "40",
-      "train_index": "39",
-      "activity": "writing",
-      "activity_zh": "写字",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "41",
-      "train_index": "40",
-      "activity": "tear up paper",
-      "activity_zh": "撕纸",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "42",
-      "train_index": "41",
-      "activity": "drop",
-      "activity_zh": "东西掉了",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "43",
-      "train_index": "42",
-      "activity": "pickup",
-      "activity_zh": "捡东西",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "44",
-      "train_index": "43",
-      "activity": "throw",
-      "activity_zh": "扔东西",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "45",
-      "train_index": "44",
-      "activity": "kicking something",
-      "activity_zh": "踢东西",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "46",
-      "train_index": "45",
-      "activity": "reach into pocket",
-      "activity_zh": "掏口袋",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "47",
-      "train_index": "46",
-      "activity": "phone call",
-      "activity_zh": "打电话",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "48",
-      "train_index": "47",
-      "activity": "play with phone",
-      "activity_zh": "玩手机",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "49",
-      "train_index": "48",
-      "activity": "type on keyboard",
-      "activity_zh": "打字",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "50",
-      "train_index": "49",
-      "activity": "taking a selfie",
-      "activity_zh": "自拍",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "51",
-      "train_index": "50",
-      "activity": "check time",
-      "activity_zh": "看表",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "52",
-      "train_index": "51",
-      "activity": "put on headphone",
-      "activity_zh": "戴耳机",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "53",
-      "train_index": "52",
-      "activity": "take off headphone",
-      "activity_zh": "摘耳机",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "54",
-      "train_index": "53",
-      "activity": "staple book",
-      "activity_zh": "订书",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "55",
-      "train_index": "54",
-      "activity": "counting money",
-      "activity_zh": "数钱",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "56",
-      "train_index": "55",
-      "activity": "cutting paper",
-      "activity_zh": "剪纸",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "57",
-      "train_index": "56",
-      "activity": "open bottle",
-      "activity_zh": "开瓶子",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "58",
-      "train_index": "57",
-      "activity": "toss a coin",
-      "activity_zh": "抛硬币",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "59",
-      "train_index": "58",
-      "activity": "fold paper",
-      "activity_zh": "折纸",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "60",
-      "train_index": "59",
-      "activity": "ball up paper",
-      "activity_zh": "揉纸成团",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "61",
-      "train_index": "60",
-      "activity": "play magic cube",
-      "activity_zh": "玩魔方",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "62",
-      "train_index": "61",
-      "activity": "put on bag",
-      "activity_zh": "背上包",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "63",
-      "train_index": "62",
-      "activity": "take off bag",
-      "activity_zh": "取下包",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "64",
-      "train_index": "63",
-      "activity": "put object into bag",
-      "activity_zh": "把物品放进包里",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "65",
-      "train_index": "64",
-      "activity": "take object out of bag",
-      "activity_zh": "从包里取出物品",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "66",
-      "train_index": "65",
-      "activity": "open a box",
-      "activity_zh": "打开盒子",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "67",
-      "train_index": "66",
-      "activity": "move heavy objects",
-      "activity_zh": "搬重物",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "68",
-      "train_index": "67",
-      "activity": "throw up cap/hat",
-      "activity_zh": "抛帽子",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "69",
-      "train_index": "68",
-      "activity": "squat down",
-      "activity_zh": "蹲下",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "70",
-      "train_index": "69",
-      "activity": "sit down",
-      "activity_zh": "坐下",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "71",
-      "train_index": "70",
-      "activity": "stand up",
-      "activity_zh": "起身",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "72",
-      "train_index": "71",
-      "activity": "hopping",
-      "activity_zh": "单脚跳",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "73",
-      "train_index": "72",
-      "activity": "jump up",
-      "activity_zh": "跳起",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "74",
-      "train_index": "73",
-      "activity": "shoot at basket",
-      "activity_zh": "投篮",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "75",
-      "train_index": "74",
-      "activity": "bounce ball",
-      "activity_zh": "拍球",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "76",
-      "train_index": "75",
-      "activity": "tennis bat swing",
-      "activity_zh": "挥网球拍",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "77",
-      "train_index": "76",
-      "activity": "juggle table tennis ball",
-      "activity_zh": "颠乒乓球",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "78",
-      "train_index": "77",
-      "activity": "arm circles",
-      "activity_zh": "手臂绕环",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "79",
-      "train_index": "78",
-      "activity": "arm swings",
-      "activity_zh": "手臂摆动",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "80",
-      "train_index": "79",
-      "activity": "run on the spot",
-      "activity_zh": "原地跑步",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "81",
-      "train_index": "80",
-      "activity": "butt kicks",
-      "activity_zh": "后踢腿",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "82",
-      "train_index": "81",
-      "activity": "cross toe touch",
-      "activity_zh": "交叉摸脚尖",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "83",
-      "train_index": "82",
-      "activity": "side kick",
-      "activity_zh": "侧踢腿",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "84",
-      "train_index": "83",
-      "activity": "hush",
-      "activity_zh": "做嘘声手势",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "85",
-      "train_index": "84",
-      "activity": "thumb up",
-      "activity_zh": "竖大拇指",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "86",
-      "train_index": "85",
-      "activity": "thumb down",
-      "activity_zh": "竖大拇指向下",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "87",
-      "train_index": "86",
-      "activity": "make OK sign",
-      "activity_zh": "比OK手势",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "88",
-      "train_index": "87",
-      "activity": "make victory sign",
-      "activity_zh": "比胜利手势",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "89",
-      "train_index": "88",
-      "activity": "snap fingers",
-      "activity_zh": "打响指",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "90",
-      "train_index": "89",
-      "activity": "shake fist",
-      "activity_zh": "挥拳",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "91",
-      "train_index": "90",
-      "activity": "clapping",
-      "activity_zh": "鼓掌",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "92",
-      "train_index": "91",
-      "activity": "salute",
-      "activity_zh": "敬礼",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "93",
-      "train_index": "92",
-      "activity": "cheer up",
-      "activity_zh": "欢呼",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "94",
-      "train_index": "93",
-      "activity": "hand waving",
-      "activity_zh": "挥手",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "95",
-      "train_index": "94",
-      "activity": "point to something",
-      "activity_zh": "指向某处",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "96",
-      "train_index": "95",
-      "activity": "nod head / bow",
-      "activity_zh": "点头/鞠躬",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "97",
-      "train_index": "96",
-      "activity": "shake head",
-      "activity_zh": "摇头",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "98",
-      "train_index": "97",
-      "activity": "put palms together",
-      "activity_zh": "合掌",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "99",
-      "train_index": "98",
-      "activity": "cross hands in front",
-      "activity_zh": "双手交叉(制止)",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "100",
-      "train_index": "99",
-      "activity": "capitulate",
-      "activity_zh": "举手投降",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "101",
-      "train_index": "100",
-      "activity": "cross arms",
-      "activity_zh": "双臂交叉抱胸",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "102",
-      "train_index": "101",
-      "activity": "follow",
-      "activity_zh": "跟随",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "103",
-      "train_index": "102",
-      "activity": "walking",
-      "activity_zh": "行走",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "104",
-      "train_index": "103",
-      "activity": "stop",
-      "activity_zh": "停止",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "105",
-      "train_index": "104",
-      "activity": "turn",
-      "activity_zh": "转向",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "106",
-      "train_index": "105",
-      "activity": "come here",
-      "activity_zh": "过来",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "107",
-      "train_index": "106",
-      "activity": "forward",
-      "activity_zh": "直行",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "108",
-      "train_index": "107",
-      "activity": "left turn",
-      "activity_zh": "左转",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "109",
-      "train_index": "108",
-      "activity": "left turn waiting",
-      "activity_zh": "左转待转",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "110",
-      "train_index": "109",
-      "activity": "right turn",
-      "activity_zh": "右转",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "111",
-      "train_index": "110",
-      "activity": "lane changing",
-      "activity_zh": "变道",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "112",
-      "train_index": "111",
-      "activity": "slow down",
-      "activity_zh": "减速",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "113",
-      "train_index": "112",
-      "activity": "pull over",
-      "activity_zh": "靠边停车",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "114",
-      "train_index": "113",
-      "activity": "Attention",
-      "activity_zh": "引起注意",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "115",
-      "train_index": "114",
-      "activity": "Rally",
-      "activity_zh": "召集／集合",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "116",
-      "train_index": "115",
-      "activity": "MoveInReverse",
-      "activity_zh": "后退",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "117",
-      "train_index": "116",
-      "activity": "sneeze / cough",
-      "activity_zh": "打喷嚏/咳嗽",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "118",
-      "train_index": "117",
-      "activity": "staggering",
-      "activity_zh": "踉跄",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "119",
-      "train_index": "118",
-      "activity": "falling down",
-      "activity_zh": "跌倒",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "120",
-      "train_index": "119",
-      "activity": "touch head",
-      "activity_zh": "捂头(头痛)",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "121",
-      "train_index": "120",
-      "activity": "touch chest",
-      "activity_zh": "捂胸(胸痛)",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "122",
-      "train_index": "121",
-      "activity": "touch back",
-      "activity_zh": "捂背(背痛)",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "123",
-      "train_index": "122",
-      "activity": "touch neck",
-      "activity_zh": "捂脖子",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "124",
-      "train_index": "123",
-      "activity": "nausea / vomiting",
-      "activity_zh": "恶心/呕吐",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "125",
-      "train_index": "124",
-      "activity": "fan self",
-      "activity_zh": "扇风(热)",
-      "status": "user_pasted_pending_original_verification"
-    },
-    {
-      "official_id": "126",
-      "train_index": "125",
-      "activity": "blow nose",
-      "activity_zh": "擤鼻涕",
-      "status": "user_pasted_pending_original_verification"
-    }
-  ],
-  "model_sha256": {
-    "bone.onnx": "7a76d42592de63a7f64054361f8c8446c9f6400c4543fa4f134ddec1081107bb",
-    "joint.onnx": "13b7fb6598fc6bf415118833630ec49c9697cf44fe427faefa3005f7be7a6d68",
-    "pose.onnx": "10ab88a4863cc86ed7872f9d5db4c67d107148aa9ec22fb6a8d91c2be2666b49"
+ "cpu_threads": 2,
+ "pose_model": "pose.onnx",
+ "classifiers": [
+  {
+   "file": "joint.onnx",
+   "weight": 0.4,
+   "temperature": 2.0
   },
-  "pose_hz": 8,
-  "max_pose_frames": 100,
-  "pose_frames": 100,
-  "scope": "offline MP4 provisional development candidate; not official acceptance",
-  "independent_test_confirmed": false
+  {
+   "file": "bone.onnx",
+   "weight": 0.6,
+   "temperature": 2.0
+  }
+ ],
+ "labels": [
+  {
+   "official_id": "1",
+   "train_index": "0",
+   "activity": "drink water",
+   "activity_zh": "喝水",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "2",
+   "train_index": "1",
+   "activity": "eat meal",
+   "activity_zh": "吃东西",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "3",
+   "train_index": "2",
+   "activity": "brush teeth",
+   "activity_zh": "刷牙",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "4",
+   "train_index": "3",
+   "activity": "brush hair",
+   "activity_zh": "梳头",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "5",
+   "train_index": "4",
+   "activity": "wear jacket",
+   "activity_zh": "穿外套",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "6",
+   "train_index": "5",
+   "activity": "take off jacket",
+   "activity_zh": "脱外套",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "7",
+   "train_index": "6",
+   "activity": "wear a shoe",
+   "activity_zh": "穿鞋",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "8",
+   "train_index": "7",
+   "activity": "take off a shoe",
+   "activity_zh": "脱鞋",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "9",
+   "train_index": "8",
+   "activity": "wear on glasses",
+   "activity_zh": "戴眼镜",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "10",
+   "train_index": "9",
+   "activity": "take off glasses",
+   "activity_zh": "摘眼镜",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "11",
+   "train_index": "10",
+   "activity": "put on a hat",
+   "activity_zh": "戴帽子",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "12",
+   "train_index": "11",
+   "activity": "take off a hat",
+   "activity_zh": "摘帽子",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "13",
+   "train_index": "12",
+   "activity": "cutting something",
+   "activity_zh": "切东西",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "14",
+   "train_index": "13",
+   "activity": "pouring something",
+   "activity_zh": "倒液体",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "15",
+   "train_index": "14",
+   "activity": "cooking something",
+   "activity_zh": "烹饪",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "16",
+   "train_index": "15",
+   "activity": "opening refrigerator",
+   "activity_zh": "打开冰箱",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "17",
+   "train_index": "16",
+   "activity": "washing dishes",
+   "activity_zh": "洗碗",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "18",
+   "train_index": "17",
+   "activity": "cleaning toilet",
+   "activity_zh": "清洁马桶",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "19",
+   "train_index": "18",
+   "activity": "cleaning windows",
+   "activity_zh": "擦洗窗户",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "20",
+   "train_index": "19",
+   "activity": "doing laundry",
+   "activity_zh": "洗衣服",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "21",
+   "train_index": "20",
+   "activity": "folding clothes",
+   "activity_zh": "叠衣服",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "22",
+   "train_index": "21",
+   "activity": "hand washing clothes",
+   "activity_zh": "手洗衣服",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "23",
+   "train_index": "22",
+   "activity": "ironing",
+   "activity_zh": "熨衣服",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "24",
+   "train_index": "23",
+   "activity": "making the bed",
+   "activity_zh": "整理床铺",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "25",
+   "train_index": "24",
+   "activity": "mopping floor",
+   "activity_zh": "拖地",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "26",
+   "train_index": "25",
+   "activity": "moving furniture",
+   "activity_zh": "搬动家具",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "27",
+   "train_index": "26",
+   "activity": "sweeping floor",
+   "activity_zh": "扫地",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "28",
+   "train_index": "27",
+   "activity": "watering plants",
+   "activity_zh": "给植物浇水",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "29",
+   "train_index": "28",
+   "activity": "rub two hands",
+   "activity_zh": "搓手",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "30",
+   "train_index": "29",
+   "activity": "flick hair",
+   "activity_zh": "拨头发",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "31",
+   "train_index": "30",
+   "activity": "wipe face",
+   "activity_zh": "擦脸",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "32",
+   "train_index": "31",
+   "activity": "cutting nails",
+   "activity_zh": "剪指甲",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "33",
+   "train_index": "32",
+   "activity": "sniff/smell",
+   "activity_zh": "闻气味",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "34",
+   "train_index": "33",
+   "activity": "apply cream on face",
+   "activity_zh": "脸上涂面霜",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "35",
+   "train_index": "34",
+   "activity": "apply cream on hand",
+   "activity_zh": "手上涂护手霜",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "36",
+   "train_index": "35",
+   "activity": "yawn",
+   "activity_zh": "打哈欠",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "37",
+   "train_index": "36",
+   "activity": "stretch oneself",
+   "activity_zh": "伸懒腰",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "38",
+   "train_index": "37",
+   "activity": "none",
+   "activity_zh": "无动作",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "39",
+   "train_index": "38",
+   "activity": "reading",
+   "activity_zh": "看书",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "40",
+   "train_index": "39",
+   "activity": "writing",
+   "activity_zh": "写字",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "41",
+   "train_index": "40",
+   "activity": "tear up paper",
+   "activity_zh": "撕纸",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "42",
+   "train_index": "41",
+   "activity": "drop",
+   "activity_zh": "东西掉了",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "43",
+   "train_index": "42",
+   "activity": "pickup",
+   "activity_zh": "捡东西",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "44",
+   "train_index": "43",
+   "activity": "throw",
+   "activity_zh": "扔东西",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "45",
+   "train_index": "44",
+   "activity": "kicking something",
+   "activity_zh": "踢东西",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "46",
+   "train_index": "45",
+   "activity": "reach into pocket",
+   "activity_zh": "掏口袋",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "47",
+   "train_index": "46",
+   "activity": "phone call",
+   "activity_zh": "打电话",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "48",
+   "train_index": "47",
+   "activity": "play with phone",
+   "activity_zh": "玩手机",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "49",
+   "train_index": "48",
+   "activity": "type on keyboard",
+   "activity_zh": "打字",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "50",
+   "train_index": "49",
+   "activity": "taking a selfie",
+   "activity_zh": "自拍",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "51",
+   "train_index": "50",
+   "activity": "check time",
+   "activity_zh": "看表",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "52",
+   "train_index": "51",
+   "activity": "put on headphone",
+   "activity_zh": "戴耳机",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "53",
+   "train_index": "52",
+   "activity": "take off headphone",
+   "activity_zh": "摘耳机",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "54",
+   "train_index": "53",
+   "activity": "staple book",
+   "activity_zh": "订书",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "55",
+   "train_index": "54",
+   "activity": "counting money",
+   "activity_zh": "数钱",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "56",
+   "train_index": "55",
+   "activity": "cutting paper",
+   "activity_zh": "剪纸",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "57",
+   "train_index": "56",
+   "activity": "open bottle",
+   "activity_zh": "开瓶子",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "58",
+   "train_index": "57",
+   "activity": "toss a coin",
+   "activity_zh": "抛硬币",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "59",
+   "train_index": "58",
+   "activity": "fold paper",
+   "activity_zh": "折纸",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "60",
+   "train_index": "59",
+   "activity": "ball up paper",
+   "activity_zh": "揉纸成团",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "61",
+   "train_index": "60",
+   "activity": "play magic cube",
+   "activity_zh": "玩魔方",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "62",
+   "train_index": "61",
+   "activity": "put on bag",
+   "activity_zh": "背上包",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "63",
+   "train_index": "62",
+   "activity": "take off bag",
+   "activity_zh": "取下包",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "64",
+   "train_index": "63",
+   "activity": "put object into bag",
+   "activity_zh": "把物品放进包里",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "65",
+   "train_index": "64",
+   "activity": "take object out of bag",
+   "activity_zh": "从包里取出物品",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "66",
+   "train_index": "65",
+   "activity": "open a box",
+   "activity_zh": "打开盒子",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "67",
+   "train_index": "66",
+   "activity": "move heavy objects",
+   "activity_zh": "搬重物",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "68",
+   "train_index": "67",
+   "activity": "throw up cap/hat",
+   "activity_zh": "抛帽子",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "69",
+   "train_index": "68",
+   "activity": "squat down",
+   "activity_zh": "蹲下",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "70",
+   "train_index": "69",
+   "activity": "sit down",
+   "activity_zh": "坐下",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "71",
+   "train_index": "70",
+   "activity": "stand up",
+   "activity_zh": "起身",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "72",
+   "train_index": "71",
+   "activity": "hopping",
+   "activity_zh": "单脚跳",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "73",
+   "train_index": "72",
+   "activity": "jump up",
+   "activity_zh": "跳起",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "74",
+   "train_index": "73",
+   "activity": "shoot at basket",
+   "activity_zh": "投篮",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "75",
+   "train_index": "74",
+   "activity": "bounce ball",
+   "activity_zh": "拍球",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "76",
+   "train_index": "75",
+   "activity": "tennis bat swing",
+   "activity_zh": "挥网球拍",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "77",
+   "train_index": "76",
+   "activity": "juggle table tennis ball",
+   "activity_zh": "颠乒乓球",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "78",
+   "train_index": "77",
+   "activity": "arm circles",
+   "activity_zh": "手臂绕环",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "79",
+   "train_index": "78",
+   "activity": "arm swings",
+   "activity_zh": "手臂摆动",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "80",
+   "train_index": "79",
+   "activity": "run on the spot",
+   "activity_zh": "原地跑步",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "81",
+   "train_index": "80",
+   "activity": "butt kicks",
+   "activity_zh": "后踢腿",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "82",
+   "train_index": "81",
+   "activity": "cross toe touch",
+   "activity_zh": "交叉摸脚尖",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "83",
+   "train_index": "82",
+   "activity": "side kick",
+   "activity_zh": "侧踢腿",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "84",
+   "train_index": "83",
+   "activity": "hush",
+   "activity_zh": "做嘘声手势",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "85",
+   "train_index": "84",
+   "activity": "thumb up",
+   "activity_zh": "竖大拇指",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "86",
+   "train_index": "85",
+   "activity": "thumb down",
+   "activity_zh": "竖大拇指向下",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "87",
+   "train_index": "86",
+   "activity": "make OK sign",
+   "activity_zh": "比OK手势",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "88",
+   "train_index": "87",
+   "activity": "make victory sign",
+   "activity_zh": "比胜利手势",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "89",
+   "train_index": "88",
+   "activity": "snap fingers",
+   "activity_zh": "打响指",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "90",
+   "train_index": "89",
+   "activity": "shake fist",
+   "activity_zh": "挥拳",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "91",
+   "train_index": "90",
+   "activity": "clapping",
+   "activity_zh": "鼓掌",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "92",
+   "train_index": "91",
+   "activity": "salute",
+   "activity_zh": "敬礼",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "93",
+   "train_index": "92",
+   "activity": "cheer up",
+   "activity_zh": "欢呼",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "94",
+   "train_index": "93",
+   "activity": "hand waving",
+   "activity_zh": "挥手",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "95",
+   "train_index": "94",
+   "activity": "point to something",
+   "activity_zh": "指向某处",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "96",
+   "train_index": "95",
+   "activity": "nod head / bow",
+   "activity_zh": "点头/鞠躬",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "97",
+   "train_index": "96",
+   "activity": "shake head",
+   "activity_zh": "摇头",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "98",
+   "train_index": "97",
+   "activity": "put palms together",
+   "activity_zh": "合掌",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "99",
+   "train_index": "98",
+   "activity": "cross hands in front",
+   "activity_zh": "双手交叉(制止)",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "100",
+   "train_index": "99",
+   "activity": "capitulate",
+   "activity_zh": "举手投降",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "101",
+   "train_index": "100",
+   "activity": "cross arms",
+   "activity_zh": "双臂交叉抱胸",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "102",
+   "train_index": "101",
+   "activity": "follow",
+   "activity_zh": "跟随",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "103",
+   "train_index": "102",
+   "activity": "walking",
+   "activity_zh": "行走",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "104",
+   "train_index": "103",
+   "activity": "stop",
+   "activity_zh": "停止",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "105",
+   "train_index": "104",
+   "activity": "turn",
+   "activity_zh": "转向",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "106",
+   "train_index": "105",
+   "activity": "come here",
+   "activity_zh": "过来",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "107",
+   "train_index": "106",
+   "activity": "forward",
+   "activity_zh": "直行",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "108",
+   "train_index": "107",
+   "activity": "left turn",
+   "activity_zh": "左转",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "109",
+   "train_index": "108",
+   "activity": "left turn waiting",
+   "activity_zh": "左转待转",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "110",
+   "train_index": "109",
+   "activity": "right turn",
+   "activity_zh": "右转",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "111",
+   "train_index": "110",
+   "activity": "lane changing",
+   "activity_zh": "变道",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "112",
+   "train_index": "111",
+   "activity": "slow down",
+   "activity_zh": "减速",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "113",
+   "train_index": "112",
+   "activity": "pull over",
+   "activity_zh": "靠边停车",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "114",
+   "train_index": "113",
+   "activity": "Attention",
+   "activity_zh": "引起注意",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "115",
+   "train_index": "114",
+   "activity": "Rally",
+   "activity_zh": "召集／集合",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "116",
+   "train_index": "115",
+   "activity": "MoveInReverse",
+   "activity_zh": "后退",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "117",
+   "train_index": "116",
+   "activity": "sneeze / cough",
+   "activity_zh": "打喷嚏/咳嗽",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "118",
+   "train_index": "117",
+   "activity": "staggering",
+   "activity_zh": "踉跄",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "119",
+   "train_index": "118",
+   "activity": "falling down",
+   "activity_zh": "跌倒",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "120",
+   "train_index": "119",
+   "activity": "touch head",
+   "activity_zh": "捂头(头痛)",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "121",
+   "train_index": "120",
+   "activity": "touch chest",
+   "activity_zh": "捂胸(胸痛)",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "122",
+   "train_index": "121",
+   "activity": "touch back",
+   "activity_zh": "捂背(背痛)",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "123",
+   "train_index": "122",
+   "activity": "touch neck",
+   "activity_zh": "捂脖子",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "124",
+   "train_index": "123",
+   "activity": "nausea / vomiting",
+   "activity_zh": "恶心/呕吐",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "125",
+   "train_index": "124",
+   "activity": "fan self",
+   "activity_zh": "扇风(热)",
+   "status": "user_pasted_pending_original_verification"
+  },
+  {
+   "official_id": "126",
+   "train_index": "125",
+   "activity": "blow nose",
+   "activity_zh": "擤鼻涕",
+   "status": "user_pasted_pending_original_verification"
+  }
+ ],
+ "model_sha256": {
+  "bone.onnx": "3160cb005cc2dc3b32c8625d702142051c00cfc26bf66597bb6f3203819b5531",
+  "joint.onnx": "ed36b410fb920f3249b2c18cc253b67fbf7743f8634f3b3e0ddc9bcbcf944d09",
+  "pose.onnx": "10ab88a4863cc86ed7872f9d5db4c67d107148aa9ec22fb6a8d91c2be2666b49"
+ },
+ "pose_hz": 8,
+ "max_pose_frames": 100,
+ "pose_frames": 100,
+ "scope": "v3: full train+val data, sparse-observation augmentation; development candidate",
+ "independent_test_confirmed": false
 }

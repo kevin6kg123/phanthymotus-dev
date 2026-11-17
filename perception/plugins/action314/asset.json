@@ -4,10 +4,11 @@
   "max_download_bytes": 32000000,
   "files": {
     "pose.onnx": "10ab88a4863cc86ed7872f9d5db4c67d107148aa9ec22fb6a8d91c2be2666b49",
-    "joint.onnx": "13b7fb6598fc6bf415118833630ec49c9697cf44fe427faefa3005f7be7a6d68",
-    "bone.onnx": "7a76d42592de63a7f64054361f8c8446c9f6400c4543fa4f134ddec1081107bb",
-    "runtime.json": "9eff81956d3710d9dfcfd780560cb4497636daef82c6bfe13f12996d4afe7f06"
+    "joint.onnx": "ed36b410fb920f3249b2c18cc253b67fbf7743f8634f3b3e0ddc9bcbcf944d09",
+    "bone.onnx": "3160cb005cc2dc3b32c8625d702142051c00cfc26bf66597bb6f3203819b5531",
+    "runtime.json": "6f03e47905665abf68370e4c8e4426088c519928e13ff4a5bc6802d6773bac1c"
   },
   "total_model_bytes": 23208501,
-  "parameters": 5686424
+  "parameters": 5686424,
+  "note": "v3 models are bundled in the repository; url/archive_sha256 refer to the v1 release and are only used with ACTION314_ALLOW_DOWNLOAD=1"
 }

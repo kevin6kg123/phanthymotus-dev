@@ -147,6 +147,9 @@ class _Camera:
      with self._history_lock:
       if generation!=self.generation:continue
       self.history.append(pose);poses=list(self.history)
+     self._since=getattr(self,'_since',0)+1
+     if not self.queue.empty() and self._since<3:continue
+     self._since=0
      result=self.owner._from_poses(poses);result['latency_ms']=(time.perf_counter()-started)*1000;self.owner._last=result
     if not self.stop.is_set():self.publisher.publish(self._string(data=json.dumps(result)))
    except Exception:log.exception('Action314 stream frame failed');self.error_count+=1

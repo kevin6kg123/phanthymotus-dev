@@ -88,6 +88,8 @@ class MP4Recognizer:
             if kind == 'cuda':
                 import onnxruntime as ort
                 if 'CUDAExecutionProvider' not in ort.get_available_providers(): raise RuntimeError('no CUDA provider')
+            if kind == 'cpu' and c.get('pose_model_cpu') and (self.root / c['pose_model_cpu']).is_file():
+                files = [c['pose_model_cpu']] + files[1:]
             models = [_OrtModel(self.root / f, kind) for f in files]
         front, bodies = models[0], models[1:]
         out = front(np.zeros((1, 3, 416, 416), np.float32))

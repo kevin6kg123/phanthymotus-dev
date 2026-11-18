@@ -898,13 +898,15 @@
   }
  ],
  "model_sha256": {
-  "bone.onnx": "5bfbf07e8242e1215850c32abd756da76c77c0dbc1b70ef3cf2bd7012a23d721",
-  "joint.onnx": "28010809931e1dd771ddff78c70e66d358b6dbf168cd44d4e5b0e825d166d055",
-  "pose.onnx": "10ab88a4863cc86ed7872f9d5db4c67d107148aa9ec22fb6a8d91c2be2666b49"
+  "pose.onnx": "a4dc7880bdff4c6520f8be274efbd3146f3b0fdc174324310b805ad0d9c05651",
+  "pose_cpu.onnx": "10ab88a4863cc86ed7872f9d5db4c67d107148aa9ec22fb6a8d91c2be2666b49",
+  "joint.onnx": "1ee980ba4612a944b5f9e479292b8219d7bdcc1cde6d942e9a6acf0ff5f8c3c1",
+  "bone.onnx": "91277b2bf74d701ec5c6f4ad61a0a8eee2b26a5f1597ba05765990ef4da95d19"
  },
  "pose_hz": 8,
  "max_pose_frames": 100,
  "pose_frames": 100,
- "scope": "v6: classifiers trained on official train+val + CTPGesture + NTU120 2D skeletons with sparse-observation augmentation",
- "independent_test_confirmed": false
+ "scope": "v10: YOLO11m-pose (TensorRT) / YOLO11n-pose (CPU warm-up); classifiers trained on YOLO11m skeletons + CTPGesture + NTU120",
+ "independent_test_confirmed": false,
+ "pose_model_cpu": "pose_cpu.onnx"
 }

@@ -3,10 +3,11 @@
   "archive_sha256": "a981210b62ba1efd467d0882976a8d0722cff661c0cea08f342283693e9db6d1",
   "max_download_bytes": 32000000,
   "files": {
-    "pose.onnx": "10ab88a4863cc86ed7872f9d5db4c67d107148aa9ec22fb6a8d91c2be2666b49",
-    "joint.onnx": "28010809931e1dd771ddff78c70e66d358b6dbf168cd44d4e5b0e825d166d055",
-    "bone.onnx": "5bfbf07e8242e1215850c32abd756da76c77c0dbc1b70ef3cf2bd7012a23d721",
-    "runtime.json": "1a60d1d551a2d55e833f14ac03810534ab89dc76123757552d22afef389860ca"
+    "pose.onnx": "a4dc7880bdff4c6520f8be274efbd3146f3b0fdc174324310b805ad0d9c05651",
+    "pose_cpu.onnx": "10ab88a4863cc86ed7872f9d5db4c67d107148aa9ec22fb6a8d91c2be2666b49",
+    "joint.onnx": "1ee980ba4612a944b5f9e479292b8219d7bdcc1cde6d942e9a6acf0ff5f8c3c1",
+    "bone.onnx": "91277b2bf74d701ec5c6f4ad61a0a8eee2b26a5f1597ba05765990ef4da95d19",
+    "runtime.json": "f62a34f5a2a124936fd65d9c9827fe48d9876d3fec0d4ea91682224b4ae28486"
   },
   "total_model_bytes": 23196285,
   "parameters": 5686424,

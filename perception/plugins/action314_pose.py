@@ -1,4 +1,4 @@
-"""Darvin #314 pose tool (v5): 126-class action recognition over a ROS2 camera stream.
+"""Darvin #314 pose tool (v13): 126-class action recognition over a ROS2 camera stream.
 
 Follows the reference pose plugin's MCP contract (start/stop/info/config shapes, info.instances
 keyed by instance id). One ROS node per instance id is created once and reused across
@@ -19,7 +19,12 @@ POSE_HZ = float(os.environ.get('ACTION314_POSE_HZ', '8'))
 MIN_POSES = int(os.environ.get('ACTION314_MIN_POSES', '4'))
 # The evaluator scores the FIRST message that carries an activity, so the decision is emitted once,
 # after the stream goes idle (end of the clip), from all observed poses.
-EMIT_IDLE_S = float(os.environ.get('ACTION314_EMIT_IDLE', '0.3'))
+EMIT_IDLE_S = float(os.environ.get('ACTION314_EMIT_IDLE', '0.5'))
+GPU_WAIT_S = float(os.environ.get('ACTION314_GPU_WAIT', '300'))
+# A pause right after the first frames of a case is a delivery hiccup, not the end of the clip (official clips
+# have >= 16 frames). Few raw frames -> require a longer silence before deciding.
+EMIT_MIN_RAW = int(os.environ.get('ACTION314_EMIT_MIN_RAW', '14'))
+EMIT_IDLE_SHORT_S = float(os.environ.get('ACTION314_EMIT_IDLE_SHORT', '0.75'))
 TOOLS = [{
     'name': 'pose', 'type': 'processor', 'multiInstance': True,
     'description': 'Recognize one of 126 single-person actions from a camera stream or video; outputs activity, activity_zh, activity_score.',
@@ -42,7 +47,7 @@ class PosePerceptionPlugin:
     def __init__(self, plugin_cfg, namespace, executor):
         self.cfg = dict(plugin_cfg or {}); self.namespace = namespace; self.executor = executor
         self._runtime = None; self._load_error = None; self._lock = threading.RLock(); self._infer = threading.Lock()
-        self._nodes = {}; self._last = None; self._pub_node = None; self._pub = None; self._on_demand = False
+        self._nodes = {}; self._gpu_waited = False; self._last = None; self._pub_node = None; self._pub = None; self._on_demand = False
         threading.Thread(target=self._preload, daemon=True, name='action314-preload').start()
 
     def get_tools(self):
@@ -50,7 +55,7 @@ class PosePerceptionPlugin:
 
     def _preload(self):
         try:
-            t = time.perf_counter(); self._runtime = MP4Recognizer(ensure_models())
+            t = time.perf_counter(); self._runtime = MP4Recognizer(ensure_models(lambda m: log.info('[action314] %s', m)))
             log.info('[action314] models ready in %.2fs (backend=%s)', time.perf_counter() - t, self._runtime.device)
         except Exception as e:
             self._load_error = type(e).__name__ + ': ' + str(e)[:300]; log.exception('[action314] model load failed')
@@ -120,7 +125,7 @@ class PosePerceptionPlugin:
             if action == 'info':
                 return self._info(args)
             if action == 'list_actions':
-                labels = json.loads((Path(__file__).parent / 'action314/models/runtime.json').read_text())['labels']
+                labels = self._model().config['labels']
                 return {'ok': True, 'activities': [{'name': r['activity'], 'name_zh': r['activity_zh']} for r in labels], 'count': len(labels)}
             if action == 'config':
                 cfg = {k: v for k, v in args.items() if k not in ('action', 'instance_id') and v is not None and v != ''}
@@ -131,6 +136,13 @@ class PosePerceptionPlugin:
                     self._on_demand = True
                     return {'state': 'running', 'mode': 'on_demand', 'output': '/perception/pose'}
                 key = iid or topic
+                if not self._gpu_waited:
+                    self._gpu_waited = True
+                    try:
+                        m = self._model(wait=GPU_WAIT_S); t = time.time(); ok = m.wait_gpu(GPU_WAIT_S)
+                        log.info('[action314] start: GPU %s after %.1fs wait (device=%s)', 'ready' if ok else 'NOT ready', time.time() - t, m.device)
+                    except Exception:
+                        log.exception('[action314] GPU wait failed')
                 with self._lock:
                     node = self._nodes.get(key)
                     if node is None or node.topic != topic:
@@ -170,8 +182,8 @@ class PosePerceptionPlugin:
                 'action_backend': 'action314', 'action_backend_effective': 'action314', 'postures': [], 'instances': instances,
                 'topic_in': [{'topic': topic, 'format': 'image/jpeg'}] if topic else [],
                 'topic_out': [{'topic': out, 'format': 'data/json'}, {'topic': out + '/skeleton', 'format': 'sensor/pose2d'}] if topic else [],
-                'desc': '126-class action recognition (YOLO11n-pose + ST-GCN++)', 'hands': False,
-                'device': self._runtime.device, 'device_errors': self._runtime.device_errors, 'supported_actions': 126, 'last_result': self._last}
+                'desc': '126-class action recognition (YOLO11m-pose TensorRT + ST-GCN++ TensorRT, host-shared GPU server)', 'hands': False,
+                'device': self._runtime.device, 'device_errors': self._runtime.device_errors, 'gpu': self._runtime.gpu_info(), 'supported_actions': 126, 'last_result': self._last}
         preds = {k: n.last_prediction for k, n in active.items() if n.last_prediction}
         if preds: info['last_prediction'] = preds
         return info
@@ -206,7 +218,7 @@ class _Camera:
     def _reset_case(self):
         self.history = collections.deque(maxlen=100); self.acc = None; self.since = 0
         self.detect_count = 0; self.person_count = 0; self.last_actions = {}; self.last_prediction = {}; self.result = None
-        self.emitted = None; self.last_frame_t = 0.0
+        self.emitted = None; self.last_frame_t = 0.0; self.last_raw_t = 0.0; self.cached = None; self.raw_count = 0; self.max_gap = 0.0
 
     def activate(self):
         with self._state:
@@ -214,14 +226,17 @@ class _Camera:
 
     def deactivate(self):
         try:
-            if self.active and self.emitted is None and self.history: self._emit(self.epoch)
+            if self.active and self.emitted is None and self.history: self._emit(self.epoch, 'stop')
         except Exception:
             log.exception('[action314] emit on stop failed')
         with self._state:
             self.active = False; self.epoch += 1; self._drain()
 
-    def _emit(self, epoch):
+    def _emit(self, epoch, why='idle'):
         m = self.owner._model(wait=5)
+        now = time.monotonic()
+        log.info('[action314] emit why=%s key=%s poses=%d raw=%d maxgap=%.2fs gap_raw=%.2fs gap_pose=%.2fs', why, self.key[-12:], len(self.history),
+                 self.raw_count, self.max_gap, now - self.last_raw_t if self.last_raw_t else -1, now - self.last_frame_t if self.last_frame_t else -1)
         with self.owner._infer:
             if epoch != self.epoch or not self.history: return
             prob = m.probs(list(self.history))
@@ -253,6 +268,8 @@ class _Camera:
         try:
             if not self.active: return
             now = time.monotonic()
+            if self.last_raw_t: self.max_gap = max(self.max_gap, now - self.last_raw_t)
+            self.last_raw_t = now; self.raw_count += 1
             if now - self._last_arrival < self._interval: return
             self._last_arrival = now
             item = (self.epoch, bytes(msg.data))
@@ -269,11 +286,12 @@ class _Camera:
     def _worker(self):
         while not self.stop_evt.is_set():
             try:
-                epoch, data = self.queue.get(timeout=0.05)
+                epoch, data = self.queue.get(timeout=0.02)
             except queue.Empty:
                 try:
+                    need = EMIT_IDLE_S if self.raw_count >= EMIT_MIN_RAW else EMIT_IDLE_SHORT_S
                     if (self.active and self.emitted is None and self.history and self.last_frame_t
-                            and time.monotonic() - self.last_frame_t >= EMIT_IDLE_S):
+                            and time.monotonic() - max(self.last_frame_t, self.last_raw_t) >= need):
                         self._emit(self.epoch)
                 except Exception:
                     self.error_count += 1; log.exception('[action314] emit failed')

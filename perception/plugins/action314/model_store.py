@@ -1,60 +1,97 @@
-"""Locate the hash-pinned action314 models.
+"""Locate the hash-pinned action314 models (v13: models are NOT stored in git).
 
-The models are bundled in the repository (plugins/action314/models) so the
-evaluation device never needs network access at start-up. A download from the
-GitHub Release is only attempted when ACTION314_ALLOW_DOWNLOAD=1.
+Every file listed in asset.json (ONNX models, runtime.json, TensorRT engines per TensorRT version) is fetched
+from the first reachable base URL (default: the internal JuiceFS HTTP mirror), verified by SHA256 and kept in a
+host-shared cache under /dev/shm so that the ten instances on one Jetson download once (flock).
+ACTION314_MODEL_DIR may point at a pre-provisioned directory; ACTION314_MODEL_URLS overrides the base URLs.
 """
-import hashlib,json,os,tarfile,tempfile,threading,urllib.request
+import fcntl, hashlib, json, os, threading, time, urllib.request
 from pathlib import Path
 
-_LOCK=threading.Lock()
-HERE=Path(__file__).resolve().parent
-BUNDLED=HERE/'models'
-_VERIFIED=set()
+_LOCK = threading.Lock()
+HERE = Path(__file__).resolve().parent
+_VERIFIED = {}
+
 
 def digest(path):
- h=hashlib.sha256()
- with Path(path).open('rb') as stream:
-  for block in iter(lambda:stream.read(1024*1024),b''):h.update(block)
- return h.hexdigest()
+    h = hashlib.sha256()
+    with Path(path).open('rb') as f:
+        for block in iter(lambda: f.read(1 << 20), b''): h.update(block)
+    return h.hexdigest()
 
-def _complete(root,spec):
- key=str(root)
- if key in _VERIFIED:return True
- ok=all((root/n).is_file() and digest(root/n)==h for n,h in spec['files'].items())
- if ok:_VERIFIED.add(key)
- return ok
 
-def ensure_models():
- spec=json.loads((HERE/'asset.json').read_text())
- with _LOCK:
-  candidates=[BUNDLED]
-  if os.environ.get('ACTION314_MODEL_DIR'):candidates.insert(0,Path(os.environ['ACTION314_MODEL_DIR']).resolve())
-  for root in candidates:
-   if _complete(root,spec):return root
-  if os.environ.get('ACTION314_ALLOW_DOWNLOAD')!='1':
-   raise RuntimeError('Bundled action314 models missing or hash mismatch in '+str(BUNDLED))
-  root=Path(os.environ.get('ACTION314_MODEL_DIR','/tmp/action314-models')).resolve();root.mkdir(parents=True,exist_ok=True)
-  with tempfile.TemporaryDirectory(prefix='.action314-',dir=root) as temp:
-   temp=Path(temp);archive=temp/'models.tar.gz';request=urllib.request.Request(spec['url'],headers={'User-Agent':'PhanthyMotus-Action314/1'})
-   with urllib.request.urlopen(request,timeout=20) as source,archive.open('wb') as destination:
-    count=0
-    while True:
-     block=source.read(1024*1024)
-     if not block:break
-     count+=len(block)
-     if count>spec['max_download_bytes']:raise ValueError('Model asset exceeds declared maximum size')
-     destination.write(block)
-   if digest(archive)!=spec['archive_sha256']:raise ValueError('Downloaded model asset SHA256 mismatch')
-   with tarfile.open(archive,'r:gz') as source:
-    members={m.name:m for m in source.getmembers()}
-    if set(members)!=set(spec['files']):raise ValueError('Unexpected model archive members')
-    for name,expected in spec['files'].items():
-     member=members[name]
-     if Path(name).name!=name or not member.isfile() or member.size>30_000_000:raise ValueError('Unsafe model archive member')
-     payload=source.extractfile(member)
-     with (temp/name).open('wb') as target:target.write(payload.read())
-     if digest(temp/name)!=expected:raise ValueError('Model member SHA256 mismatch: '+name)
-   for name in spec['files']:os.replace(temp/name,root/name)
-  if not _complete(root,spec):raise ValueError('Model installation incomplete')
-  return root
+def spec():
+    return json.loads((HERE / 'asset.json').read_text())
+
+
+def _ok(path, sha):
+    key = (str(path), sha)
+    if _VERIFIED.get(key): return True
+    good = Path(path).is_file() and digest(path) == sha
+    if good: _VERIFIED[key] = True
+    return good
+
+
+def _cache_root(s):
+    tag = hashlib.sha256(json.dumps(s['files'], sort_keys=True).encode()).hexdigest()[:12]
+    d = Path(os.environ.get('ACTION314_MODEL_CACHE', '/dev/shm/action314_models')) / tag
+    d.mkdir(parents=True, exist_ok=True)
+    try: os.chmod(d.parent, 0o777); os.chmod(d, 0o777)
+    except OSError: pass
+    return d
+
+
+def _fetch(name, sha, size, dest, s):
+    urls = [u for u in os.environ.get('ACTION314_MODEL_URLS', '').split(',') if u] or s['base_urls']
+    errors = []
+    for base in urls:
+        url = base.rstrip('/') + '/' + name
+        tmp = dest.with_name('.%s.%d' % (dest.name, os.getpid()))
+        try:
+            t = time.time()
+            req = urllib.request.Request(url, headers={'User-Agent': 'PhanthyMotus-Action314/13'})
+            with urllib.request.urlopen(req, timeout=float(os.environ.get('ACTION314_DOWNLOAD_TIMEOUT', '30'))) as r, tmp.open('wb') as f:
+                n = 0
+                while True:
+                    b = r.read(1 << 20)
+                    if not b: break
+                    n += len(b)
+                    if n > size: raise ValueError('larger than declared size')
+                    f.write(b)
+            if digest(tmp) != sha: raise ValueError('sha256 mismatch')
+            os.replace(tmp, dest)
+            return '%s (%.1f MB, %.1fs)' % (url, size / 1e6, time.time() - t)
+        except Exception as e:
+            errors.append('%s: %s' % (url, str(e)[:120]))
+            try: tmp.unlink()
+            except FileNotFoundError: pass
+    raise RuntimeError('cannot download %s: %s' % (name, ' | '.join(errors)))
+
+
+def ensure_files(names=None, log=None):
+    """Make sure the named files (default: all non-optional) are present and verified. Returns the root dir."""
+    s = spec(); files = s['files']
+    if names is None: names = [n for n, v in files.items() if not v.get('lazy')]
+    if os.environ.get('ACTION314_MODEL_DIR'):
+        root = Path(os.environ['ACTION314_MODEL_DIR']).resolve()
+        if all(_ok(root / n, files[n]['sha256']) for n in names): return root
+    root = _cache_root(s)
+    with _LOCK:
+        if all(_ok(root / n, files[n]['sha256']) for n in names): return root
+        with open(root / '.lock', 'a+') as lk:
+            try: os.chmod(root / '.lock', 0o666)
+            except OSError: pass
+            fcntl.flock(lk, fcntl.LOCK_EX)
+            for n in names:
+                dest = root / n
+                if _ok(dest, files[n]['sha256']): continue
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                try: os.chmod(dest.parent, 0o777)
+                except OSError: pass
+                msg = _fetch(n, files[n]['sha256'], files[n]['size'], dest, s)
+                if log: log('downloaded ' + msg)
+    return root
+
+
+def ensure_models(log=None):
+    return ensure_files(None, log)

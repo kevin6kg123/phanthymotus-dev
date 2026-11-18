@@ -1,15 +1,46 @@
 {
-  "url": "https://github.com/kevin6kg123/phanthymotus-dev/releases/download/action314-cpu-v1/action314-models-v1.tar.gz",
-  "archive_sha256": "a981210b62ba1efd467d0882976a8d0722cff661c0cea08f342283693e9db6d1",
-  "max_download_bytes": 32000000,
+  "version": "v13",
+  "base_urls": [
+    "http://172.28.4.81:34567/i-liukejun/models/action314/v13"
+  ],
   "files": {
-    "pose.onnx": "a4dc7880bdff4c6520f8be274efbd3146f3b0fdc174324310b805ad0d9c05651",
-    "pose_cpu.onnx": "10ab88a4863cc86ed7872f9d5db4c67d107148aa9ec22fb6a8d91c2be2666b49",
-    "joint.onnx": "1ee980ba4612a944b5f9e479292b8219d7bdcc1cde6d942e9a6acf0ff5f8c3c1",
-    "bone.onnx": "91277b2bf74d701ec5c6f4ad61a0a8eee2b26a5f1597ba05765990ef4da95d19",
-    "runtime.json": "f62a34f5a2a124936fd65d9c9827fe48d9876d3fec0d4ea91682224b4ae28486"
+    "bone.onnx": {
+      "sha256": "91277b2bf74d701ec5c6f4ad61a0a8eee2b26a5f1597ba05765990ef4da95d19",
+      "size": 5766721
+    },
+    "joint.onnx": {
+      "sha256": "1ee980ba4612a944b5f9e479292b8219d7bdcc1cde6d942e9a6acf0ff5f8c3c1",
+      "size": 5764052
+    },
+    "pose.onnx": {
+      "sha256": "6ffc92866aaaf4424a0fb3b3eda9e6e4dd81a9fb5d2a0911109eb998ae1e9f61",
+      "size": 83678578,
+      "lazy": true
+    },
+    "pose_cpu.onnx": {
+      "sha256": "10ab88a4863cc86ed7872f9d5db4c67d107148aa9ec22fb6a8d91c2be2666b49",
+      "size": 11665512
+    },
+    "runtime.json": {
+      "sha256": "b4f06a7f9a005709d45928838005a4189a96698fea2f74d58d39a4a0b71f5c8c",
+      "size": 25518
+    },
+    "trt/10.4.0/bone.plan": {
+      "sha256": "a3e1478890a866fe01fa3d33d1f921640100927320bcbf4b332f12c7713fc75f",
+      "size": 4425324,
+      "lazy": true
+    },
+    "trt/10.4.0/joint.plan": {
+      "sha256": "1a2a631db04a6735b7b3d6670d6508e6119e4adf3445debf7b92c7ce6a176d88",
+      "size": 4441948,
+      "lazy": true
+    },
+    "trt/10.4.0/pose.plan": {
+      "sha256": "ebae55e18c77c0732a01f00437b52b920313aa7d44bec79b1d7f9ccffa6bfb30",
+      "size": 45713356,
+      "lazy": true
+    }
   },
-  "total_model_bytes": 23196285,
-  "parameters": 5686424,
-  "note": "v3 models are bundled in the repository; url/archive_sha256 refer to the v1 release and are only used with ACTION314_ALLOW_DOWNLOAD=1"
+  "note": "Models are not stored in git. Non-lazy files are fetched at start-up; trt/<TensorRT>/ engines are fetched by the host GPU-server owner; pose.onnx only if no engine matches this TensorRT and it must be rebuilt.",
+  "parameters": 26586424
 }

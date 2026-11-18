@@ -9,7 +9,8 @@ import collections, json, logging, os, queue, re, tempfile, threading, time, url
 from pathlib import Path
 import cv2, numpy as np
 from plugins.action314.mp4_runtime import MP4Recognizer
-from plugins.action314.model_store import ensure_models
+from plugins.action314.model_store import ensure_models, spec as _asset_spec
+from plugins.action314 import diag as _diag
 
 log = logging.getLogger(__name__)
 _VIDEO = {'.mp4', '.mov', '.avi', '.mkv', '.webm', '.m4v'}
@@ -55,8 +56,14 @@ class PosePerceptionPlugin:
 
     def _preload(self):
         try:
+            _diag.startup_report(_asset_spec())
+        except Exception:
+            log.exception('[action314] diag failed')
+        try:
             t = time.perf_counter(); self._runtime = MP4Recognizer(ensure_models(lambda m: log.info('[action314] %s', m)))
             log.info('[action314] models ready in %.2fs (backend=%s)', time.perf_counter() - t, self._runtime.device)
+            _diag.periodic(lambda: {'device': self._runtime.device, 'errors': self._runtime.device_errors, **self._runtime.gpu_info(),
+                                    'cases': sum(n.cases for n in list(self._nodes.values()))}, float(os.environ.get('ACTION314_DIAG_EVERY', '120')))
         except Exception as e:
             self._load_error = type(e).__name__ + ': ' + str(e)[:300]; log.exception('[action314] model load failed')
 
@@ -204,7 +211,7 @@ class _Camera:
         from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy, DurabilityPolicy
         self.owner, self.topic, self.key = owner, topic, key
         self.output_topic = topic.rstrip('/') + '/poses'; self._String = String
-        self.active = False; self.epoch = 0; self._state = threading.Lock()
+        self.active = False; self.epoch = 0; self.cases = 0; self._state = threading.Lock()
         self.queue = queue.Queue(maxsize=int(os.environ.get('ACTION314_QUEUE', '1'))); self.stop_evt = threading.Event()
         self._reset_case()
         self.error_count = 0; self._last_arrival = 0.0; self._interval = 1.0 / max(POSE_HZ, 0.5)
@@ -222,7 +229,7 @@ class _Camera:
 
     def activate(self):
         with self._state:
-            self.epoch += 1; self._drain(); self._reset_case(); self._last_arrival = 0.0; self.active = True
+            self.epoch += 1; self._drain(); self._reset_case(); self._last_arrival = 0.0; self.active = True; self.cases += 1
 
     def deactivate(self):
         try:

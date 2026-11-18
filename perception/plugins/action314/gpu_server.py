@@ -202,7 +202,7 @@ class Client:
 def _build_child(onnx, plan, status):
     t0 = time.time()
     status('building GPU engine %s (TensorRT %s)' % (Path(onnx).name, trt_version()))
-    r = subprocess.run([sys.executable, os.path.abspath(__file__), 'build', str(onnx), str(plan), os.environ.get('ACTION314_TRT_OPT_LEVEL', '3')],
+    r = subprocess.run([sys.executable, os.path.abspath(__file__), 'build', str(onnx), str(plan), os.environ.get('ACTION314_TRT_OPT_LEVEL', '1')],
                        capture_output=True, text=True, timeout=float(os.environ.get('ACTION314_TRT_BUILD_TIMEOUT', '1800')))
     if r.returncode != 0 or not Path(plan).exists():
         raise RuntimeError('engine build failed rc=%s: %s' % (r.returncode, (r.stderr or r.stdout)[-400:]))

@@ -19,7 +19,7 @@ POSE_HZ = float(os.environ.get('ACTION314_POSE_HZ', '8'))
 MIN_POSES = int(os.environ.get('ACTION314_MIN_POSES', '4'))
 # The evaluator scores the FIRST message that carries an activity, so the decision is emitted once,
 # after the stream goes idle (end of the clip), from all observed poses.
-EMIT_IDLE_S = float(os.environ.get('ACTION314_EMIT_IDLE', '1.0'))
+EMIT_IDLE_S = float(os.environ.get('ACTION314_EMIT_IDLE', '0.3'))
 TOOLS = [{
     'name': 'pose', 'type': 'processor', 'multiInstance': True,
     'description': 'Recognize one of 126 single-person actions from a camera stream or video; outputs activity, activity_zh, activity_score.',
@@ -193,7 +193,7 @@ class _Camera:
         self.owner, self.topic, self.key = owner, topic, key
         self.output_topic = topic.rstrip('/') + '/poses'; self._String = String
         self.active = False; self.epoch = 0; self._state = threading.Lock()
-        self.queue = queue.Queue(maxsize=3); self.stop_evt = threading.Event()
+        self.queue = queue.Queue(maxsize=int(os.environ.get('ACTION314_QUEUE', '1'))); self.stop_evt = threading.Event()
         self._reset_case()
         self.error_count = 0; self._last_arrival = 0.0; self._interval = 1.0 / max(POSE_HZ, 0.5)
         qin = QoSProfile(reliability=ReliabilityPolicy.BEST_EFFORT, history=HistoryPolicy.KEEP_LAST, depth=2, durability=DurabilityPolicy.VOLATILE)
@@ -269,7 +269,7 @@ class _Camera:
     def _worker(self):
         while not self.stop_evt.is_set():
             try:
-                epoch, data = self.queue.get(timeout=0.1)
+                epoch, data = self.queue.get(timeout=0.05)
             except queue.Empty:
                 try:
                     if (self.active and self.emitted is None and self.history and self.last_frame_t

@@ -74,6 +74,8 @@ class MP4Recognizer:
 
     def _build(self, kind):
         c = self.config; files = [c['pose_model']] + [x['file'] for x in c['classifiers']]
+        if kind == 'trt' and os.environ.get('ACTION314_SHIPPED_PLANS') != '1':
+            raise FileNotFoundError('shipped plans disabled; runtime build is used')
         if kind == 'trt':
             try:
                 from utils.tensorrt_runtime import tensorrt_family
@@ -113,9 +115,13 @@ class MP4Recognizer:
             except ValueError:
                 idx = 0
             time.sleep(min(idx, 9) * float(os.environ.get('ACTION314_TRT_STAGGER_S', '3')))
-            c = self.config; names = [Path(c['pose_model']).stem] + [Path(x['file']).stem for x in c['classifiers']]
+            c = self.config
+            # only the pose model needs the GPU: classifiers run once per clip and stay on CPU
+            names = [Path(c['pose_model']).stem]
             with open(d / '.lock', 'w') as lk:
                 fcntl.flock(lk, fcntl.LOCK_EX)
+                if (d / 'failed').exists():
+                    raise RuntimeError('previous engine build failed: ' + (d / 'failed').read_text()[:200])
                 if not (d / 'done').exists():
                     avail = 0
                     for line in open('/proc/meminfo'):
@@ -123,21 +129,24 @@ class MP4Recognizer:
                     if avail < int(os.environ.get('ACTION314_TRT_MIN_MB', '1200')):
                         raise RuntimeError('not enough memory to build engines (%d MB available)' % avail)
                     t0 = time.time(); import subprocess, sys as _sys
-                    r = subprocess.run([_sys.executable, str(Path(__file__).with_name('trt_build.py')), str(self.root), str(d),
-                                        os.environ.get('ACTION314_TRT_OPT_LEVEL', '1')] + names,
-                                       capture_output=True, text=True, timeout=float(os.environ.get('ACTION314_TRT_BUILD_TIMEOUT', '1500')))
+                    try:
+                        r = subprocess.run([_sys.executable, str(Path(__file__).with_name('trt_build.py')), str(self.root), str(d),
+                                            os.environ.get('ACTION314_TRT_OPT_LEVEL', '0')] + names,
+                                           capture_output=True, text=True, timeout=float(os.environ.get('ACTION314_TRT_BUILD_TIMEOUT', '1500')))
+                    except subprocess.TimeoutExpired:
+                        (d / 'failed').write_text('timeout'); raise
                     if r.returncode != 0 or not all((d / (n + '.plan')).is_file() for n in names):
+                        (d / 'failed').write_text((r.stderr or r.stdout)[-300:] or 'rc=%d' % r.returncode)
                         raise RuntimeError('engine build failed: ' + (r.stderr or r.stdout)[-300:])
                     (d / 'done').write_text('%.1f' % (time.time() - t0))
                     log.info('[action314] TensorRT %s plans built in %.1fs', trt.__version__, time.time() - t0)
-            models = [_TrtModel(d / (n + '.plan')) for n in names]
-            front, bodies = models[0], models[1:]
+            front = _TrtModel(d / (names[0] + '.plan')); bodies = self.bodies
             out = np.asarray(front(np.zeros((1, 3, 416, 416), np.float32)))
             if out.shape[1] != 56: raise RuntimeError('unexpected pose output %s' % (out.shape,))
             for b in bodies:
                 lg = b(np.zeros((1, self.config.get('pose_frames', 100), 17, 3), np.float32))
                 if lg.shape != (1, 126) or not np.isfinite(lg).all(): raise RuntimeError('bad classifier output')
-            self.front, self.bodies, self.device = front, bodies, 'trt'
+            self.front, self.device = front, 'trt'
             log.info('[action314] backend=trt (runtime-built plans, hot swap)')
         except Exception as e:
             self.device_errors['trt_runtime'] = type(e).__name__ + ': ' + str(e)[:240]

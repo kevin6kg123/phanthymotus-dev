@@ -140,7 +140,30 @@ class MP4Recognizer:
         return (np.stack(out)[None].astype(np.float32) / 255.0)
 
     def probs(self, poses, frames=None):
-        c = self.config; raw_poses = poses; v = np.asarray(poses, dtype=np.float32)
+        prob = self.skel_probs(poses)
+        pr = self.rgb_probs(poses, frames) if frames else None
+        return self.fuse(prob, pr)
+
+    def fuse(self, prob, pr):
+        prob = prob.copy()
+        if pr is not None: a = self.config['rgb'].get('weight', 0.2); prob = (1 - a) * prob + a * pr
+        if self.none_index is not None: prob[self.none_index] = 0.0
+        return prob / max(prob.sum(), 1e-12)
+
+    def rgb_probs(self, poses, frames):
+        g = self.gpu
+        if not (frames and self.has_rgb and g is not None): return None
+        try:
+            r = self.config['rgb']; z = g.model(len(self.config['classifiers']), self.rgb_clip(poses, frames))[0].astype(np.float64) / r.get('temperature', 1.0)
+            if self.none_index is not None: z[self.none_index] = -1e9
+            z -= z.max(); pr = np.exp(z); pr /= pr.sum(); self.counters['gpu_rgb'] = self.counters.get('gpu_rgb', 0) + 1
+            return pr
+        except Exception as e:
+            self.device_errors['gpu_rgb'] = type(e).__name__ + ': ' + str(e)[:200]
+            return None
+
+    def skel_probs(self, poses):
+        c = self.config; v = np.asarray(poses, dtype=np.float32)
         v = v[np.linspace(0, len(v) - 1, c.get('pose_frames', 100)).round().astype(int)][None]
         prob = np.zeros(126, np.float64); g = self.gpu
         for i, spec in enumerate(c['classifiers']):
@@ -153,17 +176,6 @@ class MP4Recognizer:
             if z is None:
                 z = self.bodies[i](v)[0].astype(np.float64); self.counters['cpu_cls'] = self.counters.get('cpu_cls', 0) + 1
             z = z / spec.get('temperature', 1.0); z -= z.max(); p = np.exp(z); p /= p.sum(); prob += spec['weight'] * p
-        prob /= max(prob.sum(), 1e-12)
-        g = self.gpu
-        if frames and self.has_rgb and g is not None:
-            try:
-                r = c['rgb']; z = g.model(len(c['classifiers']), self.rgb_clip(raw_poses, frames))[0].astype(np.float64) / r.get('temperature', 1.0)
-                if self.none_index is not None: z[self.none_index] = -1e9
-                z -= z.max(); pr = np.exp(z); pr /= pr.sum(); a = r.get('weight', 0.2)
-                prob = (1 - a) * prob + a * pr; self.counters['gpu_rgb'] = self.counters.get('gpu_rgb', 0) + 1
-            except Exception as e:
-                self.device_errors['gpu_rgb'] = type(e).__name__ + ': ' + str(e)[:200]
-        if self.none_index is not None: prob[self.none_index] = 0.0
         return prob / max(prob.sum(), 1e-12)
 
     def label(self, prob):

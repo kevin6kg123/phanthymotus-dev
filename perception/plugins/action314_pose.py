@@ -27,6 +27,8 @@ GPU_WAIT_S = float(os.environ.get('ACTION314_GPU_WAIT', '300'))
 RGB_KEEP = int(os.environ.get('ACTION314_RGB_KEEP', '48'))
 RGB_MAXSIDE = int(os.environ.get('ACTION314_RGB_MAXSIDE', '400'))
 PRECOMPUTE_S = float(os.environ.get('ACTION314_PRECOMPUTE', '0.25'))
+RGB_EVERY = int(os.environ.get('ACTION314_RGB_EVERY', '12'))
+RGB_MIN_FRAMES = int(os.environ.get('ACTION314_RGB_MIN', '6'))
 EMIT_MIN_RAW = int(os.environ.get('ACTION314_EMIT_MIN_RAW', '14'))
 EMIT_IDLE_SHORT_S = float(os.environ.get('ACTION314_EMIT_IDLE_SHORT', '0.75'))
 TOOLS = [{
@@ -223,12 +225,15 @@ class _Camera:
         self.pub = self.node.create_publisher(String, self.output_topic, 10)
         self.sub = self.node.create_subscription(CompressedImage, topic, self._on_image, qin)
         owner.executor.add_node(self.node)
+        self.rgb_evt = threading.Event(); self.rgb_job = None; self.rgb_res = None
+        self.rgb_thread = threading.Thread(target=self._rgb_worker, daemon=True, name='action314-rgb-' + key[-16:]); self.rgb_thread.start()
         self.thread = threading.Thread(target=self._worker, daemon=True, name='action314-' + key[-20:]); self.thread.start()
 
     def _reset_case(self):
         self.history = collections.deque(maxlen=100); self.acc = None; self.since = 0
         self.detect_count = 0; self.person_count = 0; self.last_actions = {}; self.last_prediction = {}; self.result = None
         self.emitted = None; self.last_frame_t = 0.0; self.last_raw_t = 0.0; self.cached = None; self.raw_count = 0; self.max_gap = 0.0; self.frames = []; self.frame_step = 1; self.frame_seen = 0
+        self.rgb_res = None; self.rgb_job = None; self.rgb_last = 0
 
     def activate(self):
         with self._state:
@@ -248,11 +253,15 @@ class _Camera:
         log.info('[action314] emit why=%s key=%s poses=%d raw=%d maxgap=%.2fs gap_raw=%.2fs gap_pose=%.2fs', why, self.key[-12:], len(self.history),
                  self.raw_count, self.max_gap, now - self.last_raw_t if self.last_raw_t else -1, now - self.last_frame_t if self.last_frame_t else -1)
         c = self.cached
-        if c is not None and c[0] == (len(self.history), self.frame_seen) and epoch == self.epoch:
-            prob = c[1]
+        if c is not None and c[0] == len(self.history) and epoch == self.epoch:
+            skel = c[1]
         else:
-            prob = self._predict(m)
-            if prob is None or epoch != self.epoch: return
+            skel = self._predict(m)
+            if skel is None or epoch != self.epoch: return
+        rr = self.rgb_res
+        pr = rr[2] if rr is not None and rr[0] == epoch else None
+        prob = m.fuse(skel, pr)
+        log.info('[action314] decide rgb=%s rgb_frames=%s of %d', pr is not None, rr[1] if rr is not None else 0, self.frame_seen)
         person = m.label(prob); self.emitted = person
         self.last_actions = {1: person['activity']}
         self.last_prediction = {'activity': person['activity'], 'activity_zh': person['activity_zh'], 'score': person['activity_score']}
@@ -263,7 +272,29 @@ class _Camera:
     def _predict(self, m):
         with self.owner._infer:
             if not self.history: return None
-            return m.probs(list(self.history), list(self.frames) if self.frames else None)
+            return m.skel_probs(list(self.history))
+
+    def _want_rgb(self, force=False):
+        if self.rgb_job is not None or len(self.frames) < RGB_MIN_FRAMES or not self.history: return
+        if not force and self.frame_seen - self.rgb_last < RGB_EVERY: return
+        if self.rgb_res is not None and self.rgb_res[0] == self.epoch and self.rgb_res[1] == self.frame_seen: return
+        self.rgb_last = self.frame_seen
+        self.rgb_job = (self.epoch, self.frame_seen, list(self.history), list(self.frames)); self.rgb_evt.set()
+
+    def _rgb_worker(self):
+        while not self.stop_evt.is_set():
+            if not self.rgb_evt.wait(0.2): continue
+            self.rgb_evt.clear(); job = self.rgb_job
+            if job is None: continue
+            try:
+                ep, seen, poses, frames = job; m = self.owner._model(wait=5)
+                with self.owner._infer:
+                    pr = m.rgb_probs(poses, frames) if ep == self.epoch else None
+                if pr is not None and ep == self.epoch: self.rgb_res = (ep, seen, pr)
+            except Exception:
+                self.error_count += 1; log.exception('[action314] rgb failed')
+            finally:
+                self.rgb_job = None
 
     def _keep_frame(self, frame):
         """store a downscaled copy for the RGB branch: uniform temporal coverage with at most RGB_KEEP frames."""
@@ -321,8 +352,9 @@ class _Camera:
                     if self.active and self.emitted is None and self.history and self.last_frame_t:
                         if idle >= need:
                             self._emit(self.epoch)
-                        elif idle >= PRECOMPUTE_S and (self.cached is None or self.cached[0] != (len(self.history), self.frame_seen)):
-                            ep = self.epoch; tag = (len(self.history), self.frame_seen)
+                        elif idle >= PRECOMPUTE_S and (self.cached is None or self.cached[0] != len(self.history)):
+                            ep = self.epoch; tag = len(self.history)
+                            if self.frames: self._want_rgb(force=True)
                             pr = self._predict(self.owner._model(wait=5))
                             if ep == self.epoch and pr is not None: self.cached = (tag, pr)
                 except Exception:
@@ -338,7 +370,7 @@ class _Camera:
                     pose, _ = m.pose(frame)
                 if epoch != self.epoch: continue
                 self.history.append(pose); self.last_frame_t = time.monotonic()
-                if m.has_rgb: self._keep_frame(frame)
+                if m.has_rgb: self._keep_frame(frame); self._want_rgb()
                 if self.emitted is not None:
                     result = {'timestamp': time.time(), 'count': 1, 'persons': [self.emitted]}
                 else:
@@ -351,7 +383,7 @@ class _Camera:
                 self.error_count += 1; log.exception('[action314] stream frame failed')
 
     def close(self):
-        self.active = False; self.stop_evt.set(); self.thread.join(timeout=5)
+        self.active = False; self.stop_evt.set(); self.thread.join(timeout=5); self.rgb_thread.join(timeout=2)
         try:
             self.owner.executor.remove_node(self.node); self.node.destroy_node()
         except Exception:

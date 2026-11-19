@@ -42,6 +42,11 @@
       "size": 4425324,
       "lazy": true
     },
+    "trt/10.4.0/cls12.plan": {
+      "sha256": "5f99d5314bdf2fb3703afe0510a650c5c72083c968b2651e7e098ebeec50dede",
+      "size": 52611452,
+      "lazy": true
+    },
     "trt/10.4.0/joint.plan": {
       "sha256": "1a2a631db04a6735b7b3d6670d6508e6119e4adf3445debf7b92c7ce6a176d88",
       "size": 4441948,
@@ -50,6 +55,11 @@
     "trt/10.4.0/pose.plan": {
       "sha256": "ebae55e18c77c0732a01f00437b52b920313aa7d44bec79b1d7f9ccffa6bfb30",
       "size": 45713356,
+      "lazy": true
+    },
+    "trt/10.4.0/rgb.plan": {
+      "sha256": "a51af11f54fd27901d967bb0e500ac54174789a75837bc44886e76c1f1570f76",
+      "size": 22330068,
       "lazy": true
     }
   },

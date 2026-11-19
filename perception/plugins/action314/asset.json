@@ -1,7 +1,7 @@
 {
-  "version": "v23",
+  "version": "v25",
   "base_urls": [
-    "http://172.28.4.81:34567/i-liukejun/models/action314/v23"
+    "http://172.28.4.81:34567/i-liukejun/models/action314/v25"
   ],
   "files": {
     "pose.onnx": {
@@ -14,12 +14,12 @@
       "size": 11665512
     },
     "rgb.onnx": {
-      "sha256": "e1cc4c0e776ce0b9a7efdb0647db7d5a63f6434bb929edaac0a9e7f06b99bc60",
-      "size": 12957014,
+      "sha256": "bf7741ec465477e9c3ddca6c882a579c8279fef56f64a530ee93cb096777dfaf",
+      "size": 38881828,
       "lazy": true
     },
     "runtime.json": {
-      "sha256": "c397261f4d11d687c49f6995baf9b95890768ca13e729325354f0c66ab8473af",
+      "sha256": "93a1a9eb887952ab0a50165f49139ef8b0d1786bec78c181fe7770909355ba8d",
       "size": 23056
     },
     "skel6.onnx": {
@@ -33,8 +33,8 @@
       "lazy": true
     },
     "trt/10.4.0/rgb.plan": {
-      "sha256": "f4e0cd5bdee9cb5ce5a2ce15053c25305d3daff27d1bb9f90fec1c8841af2479",
-      "size": 8659588,
+      "sha256": "a51af11f54fd27901d967bb0e500ac54174789a75837bc44886e76c1f1570f76",
+      "size": 22330068,
       "lazy": true
     },
     "trt/10.4.0/skel6.plan": {

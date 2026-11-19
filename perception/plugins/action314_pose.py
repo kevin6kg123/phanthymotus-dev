@@ -288,8 +288,7 @@ class _Camera:
             if job is None: continue
             try:
                 ep, seen, poses, frames = job; m = self.owner._model(wait=5)
-                with self.owner._infer:
-                    pr = m.rgb_probs(poses, frames) if ep == self.epoch else None
+                pr = m.rgb_probs(poses, frames) if ep == self.epoch else None
                 if pr is not None and ep == self.epoch: self.rgb_res = (ep, seen, pr)
             except Exception:
                 self.error_count += 1; log.exception('[action314] rgb failed')

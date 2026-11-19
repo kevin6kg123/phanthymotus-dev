@@ -154,7 +154,11 @@ class MP4Recognizer:
         g = self.gpu
         if not (frames and self.has_rgb and g is not None): return None
         try:
-            r = self.config['rgb']; z = g.model(len(self.config['classifiers']), self.rgb_clip(poses, frames))[0].astype(np.float64) / r.get('temperature', 1.0)
+            rc = getattr(self, '_rgb_client', None)
+            if rc is None or getattr(self, '_rgb_client_of', None) is not g:
+                rc = gpu_server.Client(g.sock_path, timeout=getattr(g, 'timeout', 10.0)); self._rgb_client = rc; self._rgb_client_of = g
+            r = self.config['rgb']; clip = self.rgb_clip(poses, frames)
+            z = rc.model(len(self.config['classifiers']), clip)[0].astype(np.float64) / r.get('temperature', 1.0)
             if self.none_index is not None: z[self.none_index] = -1e9
             z -= z.max(); pr = np.exp(z); pr /= pr.sum(); self.counters['gpu_rgb'] = self.counters.get('gpu_rgb', 0) + 1
             return pr

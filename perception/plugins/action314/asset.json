@@ -36,6 +36,11 @@
       "sha256": "f4e0cd5bdee9cb5ce5a2ce15053c25305d3daff27d1bb9f90fec1c8841af2479",
       "size": 8659588,
       "lazy": true
+    },
+    "trt/10.4.0/skel14.plan": {
+      "sha256": "0bdde8f905e61b72bb409f1f5bedbbaad467767846ecbf6c8223ffdc21a5c832",
+      "size": 63869676,
+      "lazy": true
     }
   },
   "note": "Models are not stored in git. Non-lazy files load at start-up; ONNX/engines are fetched lazily by the GPU-server owner."

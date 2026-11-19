@@ -56,6 +56,11 @@
       "sha256": "ebae55e18c77c0732a01f00437b52b920313aa7d44bec79b1d7f9ccffa6bfb30",
       "size": 45713356,
       "lazy": true
+    },
+    "trt/10.4.0/rgb.plan": {
+      "sha256": "4c9c3facff74366567265885b606c3dd3eccabb6651ee8f3b9faff6b1d951b0e",
+      "size": 16402828,
+      "lazy": true
     }
   },
   "note": "Models are not stored in git. Non-lazy files load at start-up; ONNX/engines are fetched lazily by the GPU-server owner."

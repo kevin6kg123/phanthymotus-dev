@@ -20,13 +20,14 @@ POSE_HZ = float(os.environ.get('ACTION314_POSE_HZ', '8'))
 MIN_POSES = int(os.environ.get('ACTION314_MIN_POSES', '4'))
 # The evaluator scores the FIRST message that carries an activity, so the decision is emitted once,
 # after the stream goes idle (end of the clip), from all observed poses.
-EMIT_IDLE_S = float(os.environ.get('ACTION314_EMIT_IDLE', '0.5'))
+EMIT_IDLE_S = float(os.environ.get('ACTION314_EMIT_IDLE', '0.38'))
 GPU_WAIT_S = float(os.environ.get('ACTION314_GPU_WAIT', '300'))
 # A pause right after the first frames of a case is a delivery hiccup, not the end of the clip (official clips
 # have >= 16 frames). Few raw frames -> require a longer silence before deciding.
 RGB_KEEP = int(os.environ.get('ACTION314_RGB_KEEP', '48'))
 RGB_MAXSIDE = int(os.environ.get('ACTION314_RGB_MAXSIDE', '400'))
-PRECOMPUTE_S = float(os.environ.get('ACTION314_PRECOMPUTE', '0.25'))
+PRECOMPUTE_S = float(os.environ.get('ACTION314_PRECOMPUTE', '0.15'))
+RGB_QUIET_S = float(os.environ.get('ACTION314_RGB_QUIET', '0.12'))
 RGB_EVERY = int(os.environ.get('ACTION314_RGB_EVERY', '12'))
 RGB_MIN_FRAMES = int(os.environ.get('ACTION314_RGB_MIN', '6'))
 EMIT_MIN_RAW = int(os.environ.get('ACTION314_EMIT_MIN_RAW', '14'))
@@ -288,6 +289,7 @@ class _Camera:
             if job is None: continue
             try:
                 ep, seen, poses, frames = job; m = self.owner._model(wait=5)
+                if self.last_frame_t and time.monotonic() - self.last_frame_t > RGB_QUIET_S: continue
                 pr = m.rgb_probs(poses, frames) if ep == self.epoch else None
                 if pr is not None and ep == self.epoch: self.rgb_res = (ep, seen, pr)
             except Exception:
@@ -353,7 +355,6 @@ class _Camera:
                             self._emit(self.epoch)
                         elif idle >= PRECOMPUTE_S and (self.cached is None or self.cached[0] != len(self.history)):
                             ep = self.epoch; tag = len(self.history)
-                            if self.frames: self._want_rgb(force=True)
                             pr = self._predict(self.owner._model(wait=5))
                             if ep == self.epoch and pr is not None: self.cached = (tag, pr)
                 except Exception:

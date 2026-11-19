@@ -45,9 +45,9 @@ class MP4Recognizer:
         self.device_errors = {}; self.gpu = None; self.gpu_role = None; self.gpu_ready = threading.Event()
         self.counters = {'gpu_frames': 0, 'cpu_frames': 0, 'gpu_errors': 0}; self.gpu_log = []
         threads = int(os.environ.get('ACTION314_CPU_THREADS', str(c.get('cpu_threads', 1))))
-        self.bodies = [_OrtModel(self.root / x['file'], 1) for x in c['classifiers']]
+        self._bodies = None
         self.cpu_front = _OrtModel(self.root / c['pose_model_cpu'], threads) if c.get('pose_model_cpu') else None
-        self._check_bodies()
+        self.has_rgb = bool(c.get('rgb')) and os.environ.get('ACTION314_RGB', '1') == '1'
         labels = [x['activity'] for x in c['labels']]
         self.none_index = labels.index('none') if 'none' in labels and os.environ.get('ACTION314_ALLOW_NONE') != '1' else None
         if os.environ.get('ACTION314_DEVICE', 'gpu').lower() != 'cpu': self._join_gpu()
@@ -60,7 +60,7 @@ class MP4Recognizer:
 
     def _join_gpu(self):
         c = self.config
-        names = [c['pose_model']] + [x['file'] for x in c['classifiers']]
+        names = [c['pose_model']] + [x['file'] for x in c['classifiers']] + ([c['rgb']['file']] if c.get('rgb') else [])
         tag = hashlib.sha256(''.join(c['model_sha256'][n] for n in names).encode()).hexdigest()[:12]
         listed = model_store.spec()['files']
         try:
@@ -90,8 +90,17 @@ class MP4Recognizer:
     def device(self):
         return 'gpu-trt' if self.gpu is not None else ('cpu-warmup' if 'gpu' not in self.device_errors else 'cpu')
 
+    @property
+    def bodies(self):
+        """CPU classifier sessions, created only if the GPU server cannot serve them."""
+        if self._bodies is None:
+            files = [x['file'] for x in self.config['classifiers']]
+            root = model_store.ensure_files(files, self._status)
+            self._bodies = [_OrtModel(root / f, 1) for f in files]; self._check_bodies()
+        return self._bodies
+
     def _check_bodies(self):
-        for b in self.bodies:
+        for b in self._bodies:
             lg = b(np.zeros((1, self.config.get('pose_frames', 100), 17, 3), np.float32))
             if lg.shape != (1, 126) or not np.isfinite(lg).all(): raise RuntimeError('bad classifier output %s' % (lg.shape,))
 
@@ -111,18 +120,49 @@ class MP4Recognizer:
         x, geo = prepare_frame(frame); self.counters['cpu_frames'] += 1
         return decode_pose(self.cpu_front(x), geo)
 
-    def probs(self, poses):
-        c = self.config; v = np.asarray(poses, dtype=np.float32)
+    def rgb_clip(self, poses, frames):
+        """person-centred (1,T,S,S,3) float clip in [0,1] - same rule as the training cache."""
+        r = self.config['rgb']; T, S, margin = r.get('frames', 16), r.get('size', 160), r.get('margin', 0.25)
+        h, w = frames[0].shape[:2]; p = np.asarray(poses, np.float32); v = p[..., 2] > 0.2
+        if v.sum() >= 4:
+            xs = (p[..., 0][v] + 1) * w / 2; ys = (p[..., 1][v] + 1) * h / 2
+            x0, x1 = np.percentile(xs, 1), np.percentile(xs, 99); y0, y1 = np.percentile(ys, 1), np.percentile(ys, 99)
+            side = max(x1 - x0, y1 - y0) * (1 + 2 * margin); side = int(min(max(side, 0.35 * min(w, h)), max(w, h)))
+            bx, by = int((x0 + x1) / 2 - side / 2), int((y0 + y1) / 2 - side / 2)
+        else:
+            side = min(w, h); bx, by = 0, 0
+        out = []
+        for j in np.linspace(0, len(frames) - 1, T).round().astype(int):
+            fr = frames[j]; pad = np.full((side, side, 3), 114, np.uint8)
+            sx0, sy0, sx1, sy1 = max(0, bx), max(0, by), min(w, bx + side), min(h, by + side)
+            if sx1 > sx0 and sy1 > sy0: pad[sy0 - by:sy1 - by, sx0 - bx:sx1 - bx] = fr[sy0:sy1, sx0:sx1]
+            out.append(cv2.resize(pad, (S, S), interpolation=cv2.INTER_AREA)[:, :, ::-1])
+        return (np.stack(out)[None].astype(np.float32) / 255.0)
+
+    def probs(self, poses, frames=None):
+        c = self.config; raw_poses = poses; v = np.asarray(poses, dtype=np.float32)
         v = v[np.linspace(0, len(v) - 1, c.get('pose_frames', 100)).round().astype(int)][None]
         prob = np.zeros(126, np.float64); g = self.gpu
-        for i, (b, spec) in enumerate(zip(self.bodies, c['classifiers'])):
+        for i, spec in enumerate(c['classifiers']):
             z = None
             if g is not None:
                 try: z = g.model(i, v)[0].astype(np.float64); self.counters['gpu_cls'] = self.counters.get('gpu_cls', 0) + 1
-                except Exception as e: self.device_errors['gpu_cls'] = type(e).__name__ + ': ' + str(e)[:200]
+                except Exception as e:
+                    self.device_errors['gpu_cls'] = type(e).__name__ + ': ' + str(e)[:200]
+                    if 'not loaded yet' in str(e): self.counters['cls_skipped'] = self.counters.get('cls_skipped', 0) + 1; continue
             if z is None:
-                z = b(v)[0].astype(np.float64); self.counters['cpu_cls'] = self.counters.get('cpu_cls', 0) + 1
+                z = self.bodies[i](v)[0].astype(np.float64); self.counters['cpu_cls'] = self.counters.get('cpu_cls', 0) + 1
             z = z / spec.get('temperature', 1.0); z -= z.max(); p = np.exp(z); p /= p.sum(); prob += spec['weight'] * p
+        prob /= max(prob.sum(), 1e-12)
+        g = self.gpu
+        if frames and self.has_rgb and g is not None:
+            try:
+                r = c['rgb']; z = g.model(len(c['classifiers']), self.rgb_clip(raw_poses, frames))[0].astype(np.float64) / r.get('temperature', 1.0)
+                if self.none_index is not None: z[self.none_index] = -1e9
+                z -= z.max(); pr = np.exp(z); pr /= pr.sum(); a = r.get('weight', 0.2)
+                prob = (1 - a) * prob + a * pr; self.counters['gpu_rgb'] = self.counters.get('gpu_rgb', 0) + 1
+            except Exception as e:
+                self.device_errors['gpu_rgb'] = type(e).__name__ + ': ' + str(e)[:200]
         if self.none_index is not None: prob[self.none_index] = 0.0
         return prob / max(prob.sum(), 1e-12)
 

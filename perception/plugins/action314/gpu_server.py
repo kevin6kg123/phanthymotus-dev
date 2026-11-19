@@ -18,6 +18,16 @@ log = logging.getLogger(__name__)
 SIZE = 416
 FRAME_BYTES = SIZE * SIZE * 3
 MAX_BATCH = int(os.environ.get('ACTION314_GPU_MAX_BATCH', '8'))
+DEFER = os.environ.get('ACTION314_DEFER_BUILD', '1') == '1'   # serve pose + shipped engines first, build the rest in the background
+MIN_BUILD_MB = int(os.environ.get('ACTION314_TRT_MIN_MB', '900'))
+
+
+def _mem_avail_mb():
+    try:
+        for line in open('/proc/meminfo'):
+            if line.startswith('MemAvailable:'): return int(line.split()[1]) // 1024
+    except Exception: pass
+    return 1 << 30
 
 
 def trt_version():
@@ -90,9 +100,8 @@ class Server:
         x = np.zeros((1, 3, SIZE, SIZE), np.float32)
         for bs in (1, 2, 4, MAX_BATCH): self.pose.infer(np.repeat(x, bs, 0))
         self.extra = []
-        for p in extra_plans:
-            e = TensorRTEngine(p); shp = tuple(int(v) for v in e.input_shape)
-            e.infer(np.zeros(shp, np.float32)); self.extra.append((e, shp))
+        self._engine_cls = TensorRTEngine
+        for p in extra_plans: self.extra.append(self._load(p) if p is not None else None)
         self.extra_lock = threading.Lock()
         self.q = queue.Queue(); self.sock_path = str(sock_path)
         self.stats = {'pose_batches': 0, 'pose_frames': 0, 'pose_gpu_ms': 0.0, 'cls_calls': 0, 'cls_gpu_ms': 0.0, 'clients': 0}
@@ -103,6 +112,14 @@ class Server:
         self.srv.listen(64)
         threading.Thread(target=self._accept, daemon=True, name='a314-gpu-accept').start()
         threading.Thread(target=self._batcher, daemon=True, name='a314-gpu-batch').start()
+
+    def _load(self, p):
+        e = self._engine_cls(p); shp = tuple(int(v) for v in e.input_shape)
+        e.infer(np.zeros(shp, np.float32)); return (e, shp)
+
+    def add_extra(self, idx, p):
+        ent = self._load(p)
+        with self.extra_lock: self.extra[idx] = ent
 
     def _accept(self):
         while True:
@@ -123,8 +140,10 @@ class Server:
                         _reply(c, slot['out'])
                     elif kind == b'M':
                         idx = _recvall(c, 1)[0]; nbytes = struct.unpack('<I', _recvall(c, 4))[0]
-                        e, shp = self.extra[idx]
-                        x = np.frombuffer(_recvall(c, nbytes), np.float32).reshape(shp)
+                        buf = _recvall(c, nbytes); ent = self.extra[idx] if idx < len(self.extra) else None
+                        if ent is None: raise LookupError('engine %d not loaded yet' % idx)
+                        e, shp = ent
+                        x = np.frombuffer(buf, np.float32).reshape(shp)
                         with self.extra_lock:
                             t = time.perf_counter(); y = np.asarray(e.infer(np.ascontiguousarray(x))[0], np.float32)
                             self.stats['cls_gpu_ms'] += (time.perf_counter() - t) * 1000; self.stats['cls_calls'] += 1
@@ -240,9 +259,9 @@ def start_or_join(models, tag, on_ready, on_error, status=None):
                             if shipped and Path(shipped).is_file():
                                 shutil.copyfile(shipped, str(plan) + '.tmp'); os.replace(str(plan) + '.tmp', plan)
                                 status('using shipped engine %s' % name)
-                        if not plan.exists(): _build_child(get_onnx(), plan, status)
+                        if not plan.exists() and (plan == plans[0] or not DEFER): _build_child(get_onnx(), plan, status)
                     try:
-                        server = Server(plans[0], plans[1:], sock); break
+                        server = Server(plans[0], [p if p.exists() else None for p in plans[1:]], sock); break
                     except Exception as e:
                         status('engine load failed (%s: %s); rebuilding on this host' % (type(e).__name__, str(e)[:200]))
                         for p in plans:
@@ -251,7 +270,20 @@ def start_or_join(models, tag, on_ready, on_error, status=None):
                         if attempt: raise
                 start_or_join.server = server
                 status('GPU server serving %s' % sock)
-                on_ready(Client(sock), 'owner'); return
+                on_ready(Client(sock), 'owner')
+                for i, ((name, get_onnx, _), plan) in enumerate(zip(models[1:], plans[1:])):
+                    if server.extra[i] is not None: continue
+                    try:
+                        for _w in range(600):
+                            if _mem_avail_mb() >= MIN_BUILD_MB: break
+                            time.sleep(1.0)
+                        else:
+                            status('deferred engine %s skipped: low memory' % name); continue
+                        if not plan.exists(): _build_child(get_onnx(), plan, status)
+                        server.add_extra(i, plan); status('hot-loaded engine %s' % name)
+                    except Exception as e:
+                        status('deferred engine %s failed: %s' % (name, str(e)[:200]))
+                return
         except Exception as e:
             on_error(e)
     threading.Thread(target=run, daemon=True, name='action314-gpu').start()

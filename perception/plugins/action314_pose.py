@@ -24,6 +24,9 @@ EMIT_IDLE_S = float(os.environ.get('ACTION314_EMIT_IDLE', '0.5'))
 GPU_WAIT_S = float(os.environ.get('ACTION314_GPU_WAIT', '300'))
 # A pause right after the first frames of a case is a delivery hiccup, not the end of the clip (official clips
 # have >= 16 frames). Few raw frames -> require a longer silence before deciding.
+RGB_KEEP = int(os.environ.get('ACTION314_RGB_KEEP', '48'))
+RGB_MAXSIDE = int(os.environ.get('ACTION314_RGB_MAXSIDE', '400'))
+PRECOMPUTE_S = float(os.environ.get('ACTION314_PRECOMPUTE', '0.25'))
 EMIT_MIN_RAW = int(os.environ.get('ACTION314_EMIT_MIN_RAW', '14'))
 EMIT_IDLE_SHORT_S = float(os.environ.get('ACTION314_EMIT_IDLE_SHORT', '0.75'))
 TOOLS = [{
@@ -225,7 +228,7 @@ class _Camera:
     def _reset_case(self):
         self.history = collections.deque(maxlen=100); self.acc = None; self.since = 0
         self.detect_count = 0; self.person_count = 0; self.last_actions = {}; self.last_prediction = {}; self.result = None
-        self.emitted = None; self.last_frame_t = 0.0; self.last_raw_t = 0.0; self.cached = None; self.raw_count = 0; self.max_gap = 0.0
+        self.emitted = None; self.last_frame_t = 0.0; self.last_raw_t = 0.0; self.cached = None; self.raw_count = 0; self.max_gap = 0.0; self.frames = []; self.frame_step = 1; self.frame_seen = 0
 
     def activate(self):
         with self._state:
@@ -244,15 +247,32 @@ class _Camera:
         now = time.monotonic()
         log.info('[action314] emit why=%s key=%s poses=%d raw=%d maxgap=%.2fs gap_raw=%.2fs gap_pose=%.2fs', why, self.key[-12:], len(self.history),
                  self.raw_count, self.max_gap, now - self.last_raw_t if self.last_raw_t else -1, now - self.last_frame_t if self.last_frame_t else -1)
-        with self.owner._infer:
-            if epoch != self.epoch or not self.history: return
-            prob = m.probs(list(self.history))
+        c = self.cached
+        if c is not None and c[0] == (len(self.history), self.frame_seen) and epoch == self.epoch:
+            prob = c[1]
+        else:
+            prob = self._predict(m)
+            if prob is None or epoch != self.epoch: return
         person = m.label(prob); self.emitted = person
         self.last_actions = {1: person['activity']}
         self.last_prediction = {'activity': person['activity'], 'activity_zh': person['activity_zh'], 'score': person['activity_score']}
         result = {'timestamp': time.time(), 'count': 1, 'persons': [person], 'latency_ms': 0}
         self.detect_count += 1; self.person_count = 1; self.owner._last = result
         if epoch == self.epoch: self.pub.publish(self._String(data=json.dumps(result)))
+
+    def _predict(self, m):
+        with self.owner._infer:
+            if not self.history: return None
+            return m.probs(list(self.history), list(self.frames) if self.frames else None)
+
+    def _keep_frame(self, frame):
+        """store a downscaled copy for the RGB branch: uniform temporal coverage with at most RGB_KEEP frames."""
+        self.frame_seen += 1
+        if (self.frame_seen - 1) % self.frame_step: return
+        h, w = frame.shape[:2]; k = RGB_MAXSIDE / max(h, w)
+        self.frames.append(cv2.resize(frame, (int(w * k), int(h * k)), interpolation=cv2.INTER_AREA) if k < 1 else frame)
+        if len(self.frames) >= RGB_KEEP:
+            self.frames = self.frames[::2]; self.frame_step *= 2
 
     def _drain(self):
         try:
@@ -297,9 +317,14 @@ class _Camera:
             except queue.Empty:
                 try:
                     need = EMIT_IDLE_S if self.raw_count >= EMIT_MIN_RAW else EMIT_IDLE_SHORT_S
-                    if (self.active and self.emitted is None and self.history and self.last_frame_t
-                            and time.monotonic() - max(self.last_frame_t, self.last_raw_t) >= need):
-                        self._emit(self.epoch)
+                    idle = time.monotonic() - max(self.last_frame_t, self.last_raw_t) if self.last_frame_t else 0
+                    if self.active and self.emitted is None and self.history and self.last_frame_t:
+                        if idle >= need:
+                            self._emit(self.epoch)
+                        elif idle >= PRECOMPUTE_S and (self.cached is None or self.cached[0] != (len(self.history), self.frame_seen)):
+                            ep = self.epoch; tag = (len(self.history), self.frame_seen)
+                            pr = self._predict(self.owner._model(wait=5))
+                            if ep == self.epoch and pr is not None: self.cached = (tag, pr)
                 except Exception:
                     self.error_count += 1; log.exception('[action314] emit failed')
                 continue
@@ -313,6 +338,7 @@ class _Camera:
                     pose, _ = m.pose(frame)
                 if epoch != self.epoch: continue
                 self.history.append(pose); self.last_frame_t = time.monotonic()
+                if m.has_rgb: self._keep_frame(frame)
                 if self.emitted is not None:
                     result = {'timestamp': time.time(), 'count': 1, 'persons': [self.emitted]}
                 else:

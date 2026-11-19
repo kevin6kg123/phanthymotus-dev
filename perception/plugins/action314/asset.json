@@ -1,16 +1,23 @@
 {
-  "version": "v13",
+  "version": "v14b",
   "base_urls": [
-    "http://172.28.4.81:34567/i-liukejun/models/action314/v13"
+    "http://172.28.4.81:34567/i-liukejun/models/action314/v14b"
   ],
   "files": {
     "bone.onnx": {
       "sha256": "91277b2bf74d701ec5c6f4ad61a0a8eee2b26a5f1597ba05765990ef4da95d19",
-      "size": 5766721
+      "size": 5766721,
+      "lazy": true
+    },
+    "cls4.onnx": {
+      "sha256": "19c07fa024ad8debcf76a520df6794039e720a99dd4fa0bc9a0b9ad7b2a06923",
+      "size": 23065302,
+      "lazy": true
     },
     "joint.onnx": {
       "sha256": "1ee980ba4612a944b5f9e479292b8219d7bdcc1cde6d942e9a6acf0ff5f8c3c1",
-      "size": 5764052
+      "size": 5764052,
+      "lazy": true
     },
     "pose.onnx": {
       "sha256": "6ffc92866aaaf4424a0fb3b3eda9e6e4dd81a9fb5d2a0911109eb998ae1e9f61",
@@ -21,9 +28,14 @@
       "sha256": "10ab88a4863cc86ed7872f9d5db4c67d107148aa9ec22fb6a8d91c2be2666b49",
       "size": 11665512
     },
+    "rgb.onnx": {
+      "sha256": "8b6eaa5188f9fad574f46f63a06e2804dc5c494c16f970ab68a59ad94bcb9147",
+      "size": 12957014,
+      "lazy": true
+    },
     "runtime.json": {
-      "sha256": "b4f06a7f9a005709d45928838005a4189a96698fea2f74d58d39a4a0b71f5c8c",
-      "size": 25518
+      "sha256": "d5987c472a42afab279b92c56bb9ac2435adc1fc556ae2354fe7db904200b562",
+      "size": 23416
     },
     "trt/10.4.0/bone.plan": {
       "sha256": "a3e1478890a866fe01fa3d33d1f921640100927320bcbf4b332f12c7713fc75f",
@@ -41,6 +53,5 @@
       "lazy": true
     }
   },
-  "note": "Models are not stored in git. Non-lazy files are fetched at start-up; trt/<TensorRT>/ engines are fetched by the host GPU-server owner; pose.onnx only if no engine matches this TensorRT and it must be rebuilt.",
-  "parameters": 26586424
+  "note": "Models are not stored in git. Non-lazy files load at start-up; ONNX/engines are fetched lazily by the GPU-server owner."
 }

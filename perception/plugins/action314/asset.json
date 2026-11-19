@@ -1,7 +1,7 @@
 {
-  "version": "v14b",
+  "version": "v15",
   "base_urls": [
-    "http://172.28.4.81:34567/i-liukejun/models/action314/v14b"
+    "http://172.28.4.81:34567/i-liukejun/models/action314/v15"
   ],
   "files": {
     "bone.onnx": {
@@ -29,13 +29,13 @@
       "size": 11665512
     },
     "rgb.onnx": {
-      "sha256": "8b6eaa5188f9fad574f46f63a06e2804dc5c494c16f970ab68a59ad94bcb9147",
+      "sha256": "e1cc4c0e776ce0b9a7efdb0647db7d5a63f6434bb929edaac0a9e7f06b99bc60",
       "size": 12957014,
       "lazy": true
     },
     "runtime.json": {
-      "sha256": "d5987c472a42afab279b92c56bb9ac2435adc1fc556ae2354fe7db904200b562",
-      "size": 23416
+      "sha256": "973d42fe2e531235f4d685f83bff7393297d79464bfa1f4cc0dcabffec263a10",
+      "size": 23415
     },
     "trt/10.4.0/bone.plan": {
       "sha256": "a3e1478890a866fe01fa3d33d1f921640100927320bcbf4b332f12c7713fc75f",

@@ -280,7 +280,7 @@ class _Camera:
         if not force and self.frame_seen - self.rgb_last < RGB_EVERY: return
         if self.rgb_res is not None and self.rgb_res[0] == self.epoch and self.rgb_res[1] == self.frame_seen: return
         self.rgb_last = self.frame_seen
-        self.rgb_job = (self.epoch, self.frame_seen, list(self.history), list(self.frames)); self.rgb_evt.set()
+        self.rgb_job = (self.epoch, self.frame_seen, list(self.history), list(self.frames), force); self.rgb_evt.set()
 
     def _rgb_worker(self):
         while not self.stop_evt.is_set():
@@ -288,8 +288,8 @@ class _Camera:
             self.rgb_evt.clear(); job = self.rgb_job
             if job is None: continue
             try:
-                ep, seen, poses, frames = job; m = self.owner._model(wait=5)
-                if self.last_frame_t and time.monotonic() - self.last_frame_t > RGB_QUIET_S: continue
+                ep, seen, poses, frames, force = job; m = self.owner._model(wait=5)
+                if not force and self.last_frame_t and time.monotonic() - self.last_frame_t > RGB_QUIET_S: continue
                 pr = m.rgb_probs(poses, frames) if ep == self.epoch else None
                 if pr is not None and ep == self.epoch: self.rgb_res = (ep, seen, pr)
             except Exception:
@@ -355,6 +355,8 @@ class _Camera:
                             self._emit(self.epoch)
                         elif idle >= PRECOMPUTE_S and (self.cached is None or self.cached[0] != len(self.history)):
                             ep = self.epoch; tag = len(self.history)
+                            rr = self.rgb_res
+                            if self.frames and (rr is None or rr[0] != self.epoch): self._want_rgb(force=True)
                             pr = self._predict(self.owner._model(wait=5))
                             if ep == self.epoch and pr is not None: self.cached = (tag, pr)
                 except Exception:

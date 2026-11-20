@@ -169,7 +169,10 @@ class MP4Recognizer:
                 try:
                     z2 = rc.model(len(self.config['classifiers']) + 1, self.rgb_clip(poses, frames, r2))[0].astype(np.float64) / r2.get('temperature', 2.0)
                     if self.none_index is not None: z2[self.none_index] = -1e9
-                    z2 -= z2.max(); p2 = np.exp(z2); p2 /= p2.sum(); mx = r2.get('mix', 0.3); pr = (1 - mx) * pr + mx * p2
+                    z2 -= z2.max(); p2 = np.exp(z2); p2 /= p2.sum();
+                    mx = np.full(pr.shape, float(r2.get('mix', 0.3)))
+                    for g in r2.get('groups', []): mx[np.asarray(g['classes'], int)] = float(g['mix'])
+                    pr = (1 - mx) * pr + mx * p2; pr = pr / pr.sum()
                     self.counters['gpu_rgb2'] = self.counters.get('gpu_rgb2', 0) + 1
                 except Exception as e:
                     self.device_errors['gpu_rgb2'] = type(e).__name__ + ': ' + str(e)[:200]

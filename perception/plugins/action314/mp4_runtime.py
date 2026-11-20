@@ -60,7 +60,7 @@ class MP4Recognizer:
 
     def _join_gpu(self):
         c = self.config
-        names = [c['pose_model']] + [x['file'] for x in c['classifiers']] + ([c['rgb']['file']] if c.get('rgb') else [])
+        names = [c['pose_model']] + [x['file'] for x in c['classifiers']] + ([c['rgb']['file']] if c.get('rgb') else []) + ([c['rgb2']['file']] if c.get('rgb') and c.get('rgb2') else [])
         tag = hashlib.sha256(''.join(c['model_sha256'][n] for n in names).encode()).hexdigest()[:12]
         listed = model_store.spec()['files']
         try:
@@ -120,9 +120,9 @@ class MP4Recognizer:
         x, geo = prepare_frame(frame); self.counters['cpu_frames'] += 1
         return decode_pose(self.cpu_front(x), geo)
 
-    def rgb_clip(self, poses, frames):
+    def rgb_clip(self, poses, frames, r=None):
         """person-centred (1,T,S,S,3) float clip in [0,1] - same rule as the training cache."""
-        r = self.config['rgb']; T, S, margin = r.get('frames', 16), r.get('size', 160), r.get('margin', 0.25)
+        r = r or self.config['rgb']; T, S, margin = r.get('frames', 16), r.get('size', 160), r.get('margin', 0.25)
         h, w = frames[0].shape[:2]; p = np.asarray(poses, np.float32); v = p[..., 2] > 0.2
         if v.sum() >= 4:
             xs = (p[..., 0][v] + 1) * w / 2; ys = (p[..., 1][v] + 1) * h / 2
@@ -161,6 +161,15 @@ class MP4Recognizer:
             z = rc.model(len(self.config['classifiers']), clip)[0].astype(np.float64) / r.get('temperature', 1.0)
             if self.none_index is not None: z[self.none_index] = -1e9
             z -= z.max(); pr = np.exp(z); pr /= pr.sum(); self.counters['gpu_rgb'] = self.counters.get('gpu_rgb', 0) + 1
+            r2 = self.config.get('rgb2')
+            if r2 and os.environ.get('ACTION314_RGB2', '1') == '1':
+                try:
+                    z2 = rc.model(len(self.config['classifiers']) + 1, self.rgb_clip(poses, frames, r2))[0].astype(np.float64) / r2.get('temperature', 2.0)
+                    if self.none_index is not None: z2[self.none_index] = -1e9
+                    z2 -= z2.max(); p2 = np.exp(z2); p2 /= p2.sum(); mx = r2.get('mix', 0.3); pr = (1 - mx) * pr + mx * p2
+                    self.counters['gpu_rgb2'] = self.counters.get('gpu_rgb2', 0) + 1
+                except Exception as e:
+                    self.device_errors['gpu_rgb2'] = type(e).__name__ + ': ' + str(e)[:200]
             return pr
         except Exception as e:
             self.device_errors['gpu_rgb'] = type(e).__name__ + ': ' + str(e)[:200]

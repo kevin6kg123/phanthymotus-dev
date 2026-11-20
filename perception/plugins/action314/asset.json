@@ -51,6 +51,16 @@
       "size": 188827004,
       "lazy": true
     },
+    "trt/10.4.0/handlm.plan": {
+      "sha256": "3d08e53abbcebac7bdf7833b71dc3b158dafbf7f2cae9d4e6fab865063385d8d",
+      "size": 2705396,
+      "lazy": true
+    },
+    "trt/10.4.0/palm.plan": {
+      "sha256": "b012dee56cb60d1526095b33cad44662561d8db1fb2e1d1abfd09dc574e0169a",
+      "size": 2745028,
+      "lazy": true
+    },
     "trt/10.4.0/pose.plan": {
       "sha256": "ebae55e18c77c0732a01f00437b52b920313aa7d44bec79b1d7f9ccffa6bfb30",
       "size": 45713356,

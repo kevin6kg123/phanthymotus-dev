@@ -263,6 +263,11 @@ class _Camera:
         pr = rr[2] if rr is not None and rr[0] == epoch else None
         prob = m.fuse(skel, pr)
         log.info('[action314] decide rgb=%s rgb_frames=%s of %d', pr is not None, rr[1] if rr is not None else 0, self.frame_seen)
+        try:
+            labs = [l['activity'] if isinstance(l, dict) else str(l) for l in m.config['labels']]; ni = labs.index('none') if 'none' in labs else None
+            top = np.argsort(prob)[::-1][:3]
+            log.info('[action314] diag pnone=%.3f top3=%s', float(skel[ni]) if ni is not None else -1.0, ';'.join('%s:%.2f' % (labs[j], prob[j]) for j in top))
+        except Exception: pass
         person = m.label(prob); self.emitted = person
         self.last_actions = {1: person['activity']}
         self.last_prediction = {'activity': person['activity'], 'activity_zh': person['activity_zh'], 'score': person['activity_score']}

@@ -26,7 +26,7 @@ def spec():
 
 def _ok(path, sha):
     key = (str(path), sha)
-    if _VERIFIED.get(key): return True
+    if _VERIFIED.get(key) and Path(path).is_file(): return True
     good = Path(path).is_file() and digest(path) == sha
     if good: _VERIFIED[key] = True
     return good
@@ -38,7 +38,34 @@ def _cache_root(s):
     d.mkdir(parents=True, exist_ok=True)
     try: os.chmod(d.parent, 0o777); os.chmod(d, 0o777)
     except OSError: pass
+    if not _cache_root.cleaned:
+        _cache_root.cleaned = True; clean_stale(d.parent, keep=d.name)
     return d
+
+
+_cache_root.cleaned = False
+
+
+def clean_stale(parent, keep, min_age=None):
+    """remove sibling dirs of older submissions: not `keep`, older than min_age and with a free .lock (nobody using them)."""
+    if os.environ.get('ACTION314_SHM_HYGIENE', '1') != '1': return []
+    import shutil
+    min_age = float(os.environ.get('ACTION314_STALE_S', '300')) if min_age is None else min_age; gone = []
+    try: entries = list(Path(parent).iterdir())
+    except OSError: return gone
+    for e in entries:
+        try:
+            if e.name == keep or not e.is_dir() or time.time() - e.stat().st_mtime < min_age: continue
+            lk = e / '.lock'
+            if lk.exists():
+                with open(lk, 'a+') as f:
+                    try: fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    except BlockingIOError: continue
+                    shutil.rmtree(e, ignore_errors=True)
+            else: shutil.rmtree(e, ignore_errors=True)
+            if not e.exists(): gone.append(e.name)
+        except Exception: pass
+    return gone
 
 
 def _fetch(name, sha, size, dest, s):

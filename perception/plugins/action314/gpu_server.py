@@ -236,6 +236,14 @@ def start_or_join(models, tag, on_ready, on_error, status=None):
     def run():
         try:
             d = shm_dir(tag); sock = d / 'gpu.sock'; lockf = open(d / '.lock', 'a+')
+            try:
+                try:
+                    from . import model_store as _ms
+                except Exception:
+                    import model_store as _ms
+                gone = _ms.clean_stale(d.parent, keep=d.name)
+                if gone: status('removed stale engine dirs %s' % gone)
+            except Exception as e: status('stale cleanup failed: %s' % str(e)[:120])
             try: os.chmod(d / '.lock', 0o666)
             except OSError: pass
             while True:
@@ -257,7 +265,8 @@ def start_or_join(models, tag, on_ready, on_error, status=None):
                             try: shipped = get_plan()
                             except Exception as e: shipped = None; status('shipped engine %s unavailable: %s' % (name, str(e)[:200]))
                             if shipped and Path(shipped).is_file():
-                                shutil.copyfile(shipped, str(plan) + '.tmp'); os.replace(str(plan) + '.tmp', plan)
+                                try: os.replace(shipped, plan)  # same /dev/shm filesystem: move, no second copy in RAM
+                                except OSError: shutil.copyfile(shipped, str(plan) + '.tmp'); os.replace(str(plan) + '.tmp', plan)
                                 status('using shipped engine %s' % name)
                         if not plan.exists() and (plan == plans[0] or not DEFER): _build_child(get_onnx(), plan, status)
                     try:
@@ -269,6 +278,13 @@ def start_or_join(models, tag, on_ready, on_error, status=None):
                             except FileNotFoundError: pass
                         if attempt: raise
                 start_or_join.server = server
+                if os.environ.get('ACTION314_SHM_HYGIENE', '1') == '1':
+                    freed = 0
+                    for i, p in enumerate(plans):
+                        if (i == 0 or server.extra[i - 1] is not None) and p.exists():
+                            try: freed += p.stat().st_size; p.unlink()
+                            except OSError: pass
+                    status('freed %.0f MB of loaded engine files from /dev/shm' % (freed / 1e6))
                 status('GPU server serving %s' % sock)
                 on_ready(Client(sock), 'owner')
                 for i, ((name, get_onnx, _), plan) in enumerate(zip(models[1:], plans[1:])):
@@ -281,6 +297,9 @@ def start_or_join(models, tag, on_ready, on_error, status=None):
                             status('deferred engine %s skipped: low memory' % name); continue
                         if not plan.exists(): _build_child(get_onnx(), plan, status)
                         server.add_extra(i, plan); status('hot-loaded engine %s' % name)
+                        if os.environ.get('ACTION314_SHM_HYGIENE', '1') == '1':
+                            try: plan.unlink()
+                            except OSError: pass
                     except Exception as e:
                         status('deferred engine %s failed: %s' % (name, str(e)[:200]))
                 return

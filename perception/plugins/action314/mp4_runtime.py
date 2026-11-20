@@ -60,7 +60,7 @@ class MP4Recognizer:
 
     def _join_gpu(self):
         c = self.config
-        names = [c['pose_model']] + [x['file'] for x in c['classifiers']] + ([c['rgb']['file']] if c.get('rgb') else []) + ([c['rgb2']['file']] if c.get('rgb') and c.get('rgb2') else [])
+        names = [c['pose_model']] + [x['file'] for x in c['classifiers']] + ([c['rgb']['file']] if c.get('rgb') else []) + ([c['rgb2']['file']] if c.get('rgb') and c.get('rgb2') else []) + ([x['file'] for x in c['rgb2'].get('extra', [])] if c.get('rgb') and c.get('rgb2') else [])
         tag = hashlib.sha256(''.join(c['model_sha256'][n] for n in names).encode()).hexdigest()[:12]
         listed = model_store.spec()['files']
         try:
@@ -171,6 +171,16 @@ class MP4Recognizer:
                     z2 = rc.model(len(self.config['classifiers']) + 1, self.rgb_clip(poses, frames, r2))[0].astype(np.float64) / r2.get('temperature', 2.0)
                     if self.none_index is not None: z2[self.none_index] = -1e9
                     z2 -= z2.max(); p2 = np.exp(z2); p2 /= p2.sum();
+                    ws = 0.0; px = 0.0
+                    for k, e in enumerate(r2.get('extra', [])):
+                        try:
+                            ze = rc.model(len(self.config['classifiers']) + 2 + k, self.rgb_clip(poses, frames, e))[0].astype(np.float64) / e.get('temperature', r2.get('temperature', 2.0))
+                            if self.none_index is not None: ze[self.none_index] = -1e9
+                            ze -= ze.max(); pe = np.exp(ze); pe /= pe.sum(); px = px + float(e['w']) * pe; ws += float(e['w'])
+                            self.counters['gpu_rgb2x'] = self.counters.get('gpu_rgb2x', 0) + 1
+                        except Exception as ex:
+                            self.device_errors['gpu_rgb2x'] = type(ex).__name__ + ': ' + str(ex)[:200]
+                    if ws > 0: p2 = (1 - ws) * p2 + px
                     mx = np.full(pr.shape, float(r2.get('mix', 0.3)))
                     for g in r2.get('groups', []): mx[np.asarray(g['classes'], int)] = float(g['mix'])
                     pr = (1 - mx) * pr + mx * p2; pr = pr / pr.sum()

@@ -1,7 +1,7 @@
 {
-  "version": "v28",
+  "version": "v29",
   "base_urls": [
-    "http://172.28.4.81:34567/i-liukejun/models/action314/v28"
+    "http://172.28.4.81:34567/i-liukejun/models/action314/v29"
   ],
   "files": {
     "clip.onnx": {
@@ -24,8 +24,8 @@
       "lazy": true
     },
     "runtime.json": {
-      "sha256": "3ce594cb970cdce3e20b78f2e07e038ae349a0b2154e1ae6cd90f3677d7e1093",
-      "size": 23260
+      "sha256": "defa34f7de0f1b76826cd3ea7c6d2502ad3b73ce20629e73fbb5f6e2a271d549",
+      "size": 23697
     },
     "skel6.onnx": {
       "sha256": "a4c61863a31fc60792d3753a3435106f81cee3e407d8464c59bce82f6b7fd64f",

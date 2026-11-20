@@ -146,7 +146,10 @@ class MP4Recognizer:
 
     def fuse(self, prob, pr):
         prob = prob.copy()
-        if pr is not None: a = self.config['rgb'].get('weight', 0.2); prob = (1 - a) * prob + a * pr
+        if pr is not None:
+            r = self.config['rgb']; a = np.full(prob.shape, float(r.get('weight', 0.2)))
+            for g in r.get('groups', []): a[np.asarray(g['classes'], int)] = float(g['weight'])
+            prob = (1 - a) * prob + a * pr
         if self.none_index is not None: prob[self.none_index] = 0.0
         return prob / max(prob.sum(), 1e-12)
 

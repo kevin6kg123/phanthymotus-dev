@@ -131,8 +131,9 @@ class MP4Recognizer:
             bx, by = int((x0 + x1) / 2 - side / 2), int((y0 + y1) / 2 - side / 2)
         else:
             side = min(w, h); bx, by = 0, 0
-        out = []
-        for j in np.linspace(0, len(frames) - 1, T).round().astype(int):
+        out = []; sel = np.linspace(0, len(frames) - 1, T).round().astype(int)
+        if r.get('pick'): sel = sel[np.asarray(r['pick'], int)]
+        for j in sel:
             fr = frames[j]; pad = np.full((side, side, 3), 114, np.uint8)
             sx0, sy0, sx1, sy1 = max(0, bx), max(0, by), min(w, bx + side), min(h, by + side)
             if sx1 > sx0 and sy1 > sy0: pad[sy0 - by:sy1 - by, sx0 - bx:sx1 - bx] = fr[sy0:sy1, sx0:sx1]

@@ -32,6 +32,11 @@
       "size": 34617846,
       "lazy": true
     },
+    "trt/10.4.0/clip.plan": {
+      "sha256": "147c3c9cfaf11115a99f227a916ba9001dadd8259e3ec4cb101468211ae993bb",
+      "size": 188827004,
+      "lazy": true
+    },
     "trt/10.4.0/pose.plan": {
       "sha256": "ebae55e18c77c0732a01f00437b52b920313aa7d44bec79b1d7f9ccffa6bfb30",
       "size": 45713356,

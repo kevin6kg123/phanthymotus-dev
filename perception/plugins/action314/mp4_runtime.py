@@ -146,6 +146,10 @@ class MP4Recognizer:
 
     def fuse(self, prob, pr):
         prob = prob.copy()
+        nt = float(os.environ.get('ACTION314_NONE_THR', self.config.get('none_thr', 0.10)))
+        if nt > 0 and self.none_index is not None and prob[self.none_index] > nt:
+            self.counters['none_out'] = self.counters.get('none_out', 0) + 1
+            out = np.zeros_like(prob); out[self.none_index] = 1.0; return out
         if pr is not None:
             r = self.config['rgb']; a = np.full(prob.shape, float(r.get('weight', 0.2)))
             for g in r.get('groups', []): a[np.asarray(g['classes'], int)] = float(g['weight'])

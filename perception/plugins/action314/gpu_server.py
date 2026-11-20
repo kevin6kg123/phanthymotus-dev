@@ -20,6 +20,7 @@ FRAME_BYTES = SIZE * SIZE * 3
 MAX_BATCH = int(os.environ.get('ACTION314_GPU_MAX_BATCH', '8'))
 DEFER = os.environ.get('ACTION314_DEFER_BUILD', '1') == '1'   # serve pose + shipped engines first, build the rest in the background
 MIN_BUILD_MB = int(os.environ.get('ACTION314_TRT_MIN_MB', '900'))
+DEFER_FETCH = set(filter(None, os.environ.get('ACTION314_DEFER_FETCH', 'clip').split(',')))
 
 
 def _mem_avail_mb():
@@ -261,6 +262,8 @@ def start_or_join(models, tag, on_ready, on_error, status=None):
                 plans = [d / (name + '.plan') for name, _, _ in models]
                 for attempt in (0, 1):
                     for (name, get_onnx, get_plan), plan in zip(models, plans):
+                        if not plan.exists() and attempt == 0 and name in DEFER_FETCH and plan != plans[0]:
+                            status('deferring engine %s until the server is up' % name); continue
                         if not plan.exists() and attempt == 0:
                             try: shipped = get_plan()
                             except Exception as e: shipped = None; status('shipped engine %s unavailable: %s' % (name, str(e)[:200]))
@@ -287,7 +290,7 @@ def start_or_join(models, tag, on_ready, on_error, status=None):
                     status('freed %.0f MB of loaded engine files from /dev/shm' % (freed / 1e6))
                 status('GPU server serving %s' % sock)
                 on_ready(Client(sock), 'owner')
-                for i, ((name, get_onnx, _), plan) in enumerate(zip(models[1:], plans[1:])):
+                for i, ((name, get_onnx, get_plan), plan) in enumerate(zip(models[1:], plans[1:])):
                     if server.extra[i] is not None: continue
                     try:
                         for _w in range(600):
@@ -295,6 +298,13 @@ def start_or_join(models, tag, on_ready, on_error, status=None):
                             time.sleep(1.0)
                         else:
                             status('deferred engine %s skipped: low memory' % name); continue
+                        if not plan.exists():
+                            try: shipped = get_plan()
+                            except Exception as e: shipped = None; status('shipped engine %s unavailable: %s' % (name, str(e)[:200]))
+                            if shipped and Path(shipped).is_file():
+                                try: os.replace(shipped, plan)
+                                except OSError: shutil.copyfile(shipped, str(plan) + '.tmp'); os.replace(str(plan) + '.tmp', plan)
+                                status('fetched deferred engine %s' % name)
                         if not plan.exists(): _build_child(get_onnx(), plan, status)
                         server.add_extra(i, plan); status('hot-loaded engine %s' % name)
                         if os.environ.get('ACTION314_SHM_HYGIENE', '1') == '1':

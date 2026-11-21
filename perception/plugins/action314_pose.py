@@ -29,6 +29,7 @@ RGB_MAXSIDE = int(os.environ.get('ACTION314_RGB_MAXSIDE', '400'))
 PRECOMPUTE_S = float(os.environ.get('ACTION314_PRECOMPUTE', '0.15'))
 RGB_QUIET_S = float(os.environ.get('ACTION314_RGB_QUIET', '0.12'))
 RGB_EVERY = int(os.environ.get('ACTION314_RGB_EVERY', '12'))
+HAND_KEEP = int(os.environ.get('ACTION314_HAND_KEEP', '24'))
 RGB_MIN_FRAMES = int(os.environ.get('ACTION314_RGB_MIN', '6'))
 EMIT_MIN_RAW = int(os.environ.get('ACTION314_EMIT_MIN_RAW', '14'))
 EMIT_IDLE_SHORT_S = float(os.environ.get('ACTION314_EMIT_IDLE_SHORT', '0.75'))
@@ -235,6 +236,7 @@ class _Camera:
         self.detect_count = 0; self.person_count = 0; self.last_actions = {}; self.last_prediction = {}; self.result = None
         self.emitted = None; self.last_frame_t = 0.0; self.last_raw_t = 0.0; self.cached = None; self.raw_count = 0; self.max_gap = 0.0; self.frames = []; self.frame_step = 1; self.frame_seen = 0
         self.rgb_res = None; self.rgb_job = None; self.rgb_last = 0
+        self.hand_entries = []; self.hand_step = 1; self.hand_seen = 0; self.hand_q = None; self.hand_gate = None
 
     def activate(self):
         with self._state:
@@ -261,7 +263,8 @@ class _Camera:
             if skel is None or epoch != self.epoch: return
         rr = self.rgb_res
         pr = rr[2] if rr is not None and rr[0] == epoch else None
-        prob = m.fuse(skel, pr)
+        hq = self.hand_q[1] if self.hand_q is not None and self.hand_q[0] == epoch else None
+        prob = m.fuse(skel, pr, hq)
         log.info('[action314] decide rgb=%s rgb_frames=%s of %d', pr is not None, rr[1] if rr is not None else 0, self.frame_seen)
         try:
             labs = [l['activity'] if isinstance(l, dict) else str(l) for l in m.config['labels']]; ni = labs.index('none') if 'none' in labs else None
@@ -297,10 +300,45 @@ class _Camera:
                 if not force and self.last_frame_t and time.monotonic() - self.last_frame_t > RGB_QUIET_S: continue
                 pr = m.rgb_probs(poses, frames) if ep == self.epoch else None
                 if pr is not None and ep == self.epoch: self.rgb_res = (ep, seen, pr)
+                if getattr(m, 'has_hand', False) and ep == self.epoch and self._hand_gate(m, ep, poses, pr):
+                    ents = list(self.hand_entries)
+                    for e in ents:
+                        if ep != self.epoch: break
+                        if e['res'] is None:
+                            e['res'] = m.hand_process(e['crops']) if (e['crops'][0] is not None or e['crops'][1] is not None) else [None, None]
+                    done = [e['res'] for e in ents if e['res'] is not None]
+                    if done and ep == self.epoch: self.hand_q = (ep, m.hand_probs(done))
             except Exception:
                 self.error_count += 1; log.exception('[action314] rgb failed')
             finally:
                 self.rgb_job = None
+
+    def _hand_gate(self, m, ep, poses, pr):
+        """run the hand branch only when a static hand gesture is in the top-2 of the current fused prediction (sticky per case)."""
+        if os.environ.get('ACTION314_HAND_GATE', '1') != '1': return True
+        g = getattr(self, 'hand_gate', None)
+        if g is not None and g[0] == ep and g[1]: return True
+        ok = False
+        try:
+            with self.owner._infer: sk = m.skel_probs(list(poses))
+            if sk is not None and ep == self.epoch:
+                pf = m.fuse(sk, pr); top = np.argsort(pf)[::-1][:2]
+                ok = bool(set(int(i) for i in top) & set(int(c) for c in m.config['hand'].get('classes', [59, 60, 84, 85, 86, 87, 88])))
+        except Exception:
+            ok = False
+        self.hand_gate = (ep, ok)
+        if ok: log.info('[action314] hand gate on key=%s poses=%d', self.key[-12:], len(poses))
+        return ok
+
+    def _keep_hand(self, m, frame, pose):
+        """full-resolution wrist crops at pose time; uniform temporal coverage with at most HAND_KEEP entries."""
+        self.hand_seen += 1
+        if (self.hand_seen - 1) % self.hand_step: return
+        try: crops = m.hand_crops(frame, pose)
+        except Exception: crops = [None, None]
+        self.hand_entries.append({'crops': crops, 'res': None})
+        if len(self.hand_entries) >= HAND_KEEP:
+            self.hand_entries = self.hand_entries[::2]; self.hand_step *= 2
 
     def _keep_frame(self, frame):
         """store a downscaled copy for the RGB branch: uniform temporal coverage with at most RGB_KEEP frames."""
@@ -377,6 +415,7 @@ class _Camera:
                     pose, _ = m.pose(frame)
                 if epoch != self.epoch: continue
                 self.history.append(pose); self.last_frame_t = time.monotonic()
+                if getattr(m, 'has_hand', False): self._keep_hand(m, frame, pose)
                 if m.has_rgb: self._keep_frame(frame); self._want_rgb()
                 if self.emitted is not None:
                     result = {'timestamp': time.time(), 'count': 1, 'persons': [self.emitted]}

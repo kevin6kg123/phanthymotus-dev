@@ -1,12 +1,26 @@
 {
-  "version": "v40",
+  "version": "v41",
   "base_urls": [
-    "http://172.28.4.81:34567/i-liukejun/models/action314/v40"
+    "http://172.28.4.81:34567/i-liukejun/models/action314/v41"
   ],
   "files": {
     "clip.onnx": {
       "sha256": "a6bc44aa212349cc8ff78afaf8ecd070e8bec5df3f94a370692267b47fc3e9c7",
       "size": 632728875,
+      "lazy": true
+    },
+    "hand_mlp.npz": {
+      "sha256": "bf059fa4ff92b731e740547e6d9ff44c949b1cea652320d2d9d1372ad419de72",
+      "size": 430288
+    },
+    "handlm.onnx": {
+      "sha256": "d3a70b28617de8aa441edf95f49a84d91cbe98ef52b115b6354c2b8d634384b5",
+      "size": 4099607,
+      "lazy": true
+    },
+    "palm.onnx": {
+      "sha256": "a00f4c7513ca664eff4bc8fe611e5936455368163926e716c36fa7d3df42f0a1",
+      "size": 3905750,
       "lazy": true
     },
     "pose.onnx": {
@@ -24,8 +38,8 @@
       "lazy": true
     },
     "runtime.json": {
-      "sha256": "55660b373b18c14e3aee748767230938b25ccd6261507e0ce8bf7a3b832fc877",
-      "size": 23632
+      "sha256": "cff72c8e9d2e01d2533aaf6e68d16073289cd4215349c517e1beb81d70108a7a",
+      "size": 24051
     },
     "skel6.onnx": {
       "sha256": "a4c61863a31fc60792d3753a3435106f81cee3e407d8464c59bce82f6b7fd64f",
@@ -35,6 +49,16 @@
     "trt/10.4.0/clip.plan": {
       "sha256": "e8963b855bb68093468ef4e1f32acd9b9a2ab6f799e0bdc61357f8b432c4a89d",
       "size": 634094948,
+      "lazy": true
+    },
+    "trt/10.4.0/handlm.plan": {
+      "sha256": "3d08e53abbcebac7bdf7833b71dc3b158dafbf7f2cae9d4e6fab865063385d8d",
+      "size": 2705396,
+      "lazy": true
+    },
+    "trt/10.4.0/palm.plan": {
+      "sha256": "b012dee56cb60d1526095b33cad44662561d8db1fb2e1d1abfd09dc574e0169a",
+      "size": 2745028,
       "lazy": true
     },
     "trt/10.4.0/pose.plan": {

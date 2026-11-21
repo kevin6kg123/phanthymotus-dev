@@ -29,6 +29,7 @@ RGB_MAXSIDE = int(os.environ.get('ACTION314_RGB_MAXSIDE', '400'))
 PRECOMPUTE_S = float(os.environ.get('ACTION314_PRECOMPUTE', '0.15'))
 RGB_QUIET_S = float(os.environ.get('ACTION314_RGB_QUIET', '0.12'))
 RGB_EVERY = int(os.environ.get('ACTION314_RGB_EVERY', '12'))
+RGB_FIRST = int(os.environ.get('ACTION314_RGB_FIRST', '6'))
 RGB_MIN_FRAMES = int(os.environ.get('ACTION314_RGB_MIN', '6'))
 EMIT_MIN_RAW = int(os.environ.get('ACTION314_EMIT_MIN_RAW', '14'))
 EMIT_IDLE_SHORT_S = float(os.environ.get('ACTION314_EMIT_IDLE_SHORT', '0.75'))
@@ -282,7 +283,7 @@ class _Camera:
 
     def _want_rgb(self, force=False):
         if self.rgb_job is not None or len(self.frames) < RGB_MIN_FRAMES or not self.history: return
-        if not force and self.frame_seen - self.rgb_last < RGB_EVERY: return
+        if not force and (self.frame_seen < RGB_FIRST if self.rgb_last == 0 else self.frame_seen - self.rgb_last < RGB_EVERY): return
         if self.rgb_res is not None and self.rgb_res[0] == self.epoch and self.rgb_res[1] == self.frame_seen: return
         self.rgb_last = self.frame_seen
         self.rgb_job = (self.epoch, self.frame_seen, list(self.history), list(self.frames), force); self.rgb_evt.set()

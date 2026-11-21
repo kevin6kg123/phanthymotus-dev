@@ -30,6 +30,7 @@ PRECOMPUTE_S = float(os.environ.get('ACTION314_PRECOMPUTE', '0.15'))
 RGB_QUIET_S = float(os.environ.get('ACTION314_RGB_QUIET', '0.12'))
 RGB_EVERY = int(os.environ.get('ACTION314_RGB_EVERY', '12'))
 RGB_FIRST = int(os.environ.get('ACTION314_RGB_FIRST', '6'))
+RGB_COVER = float(os.environ.get('ACTION314_RGB_COVER', '0.7'))
 RGB_MIN_FRAMES = int(os.environ.get('ACTION314_RGB_MIN', '6'))
 EMIT_MIN_RAW = int(os.environ.get('ACTION314_EMIT_MIN_RAW', '14'))
 EMIT_IDLE_SHORT_S = float(os.environ.get('ACTION314_EMIT_IDLE_SHORT', '0.75'))
@@ -362,7 +363,7 @@ class _Camera:
                         elif idle >= PRECOMPUTE_S and (self.cached is None or self.cached[0] != len(self.history)):
                             ep = self.epoch; tag = len(self.history)
                             rr = self.rgb_res
-                            if self.frames and (rr is None or rr[0] != self.epoch): self._want_rgb(force=True)
+                            if self.frames and (rr is None or rr[0] != self.epoch or rr[1] < RGB_COVER * self.frame_seen): self._want_rgb(force=True)
                             pr = self._predict(self.owner._model(wait=5))
                             if ep == self.epoch and pr is not None: self.cached = (tag, pr)
                 except Exception:

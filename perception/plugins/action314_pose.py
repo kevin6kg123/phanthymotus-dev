@@ -315,6 +315,14 @@ class _Camera:
 
     def _hand_gate(self, m, ep, poses, pr):
         """run the hand branch only when a static hand gesture is in the top-2 of the current fused prediction (sticky per case)."""
+        if getattr(m, '_hand', None) is None:
+            if not getattr(m, '_hand_init_started', False):
+                m._hand_init_started = True
+                def _init():
+                    try: m._hand_branch(); log.info('[action314] hand branch ready')
+                    except Exception as e: log.warning('[action314] hand branch unavailable: %s', str(e)[:200])
+                threading.Thread(target=_init, daemon=True, name='action314-hand-init').start()
+            return False
         if os.environ.get('ACTION314_HAND_GATE', '1') != '1': return True
         g = getattr(self, 'hand_gate', None)
         if g is not None and g[0] == ep and g[1]: return True

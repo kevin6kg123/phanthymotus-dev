@@ -1,4 +1,9 @@
-"""Host-wide shared GPU server for action314 (pose + classifiers on TensorRT).
+"""GPU server for action314 (pose + classifiers on TensorRT).
+
+v44: ISOLATED by default - the server directory is container-private (/tmp), so every instance runs its own server,
+CUDA context and engines and serves only itself; only the read-only model files are downloaded once per host
+(model_store). The text below describes the legacy host-shared mode (ACTION314_ISOLATED=0).
+
 
 All evaluator instances on a Jetson share the host /dev/shm (--ipc=host). The first instance to take the flock
 loads (or builds) one FP16 TensorRT engine per model and serves them on a Unix socket under /dev/shm; every
@@ -15,9 +20,11 @@ from pathlib import Path
 import numpy as np
 
 log = logging.getLogger(__name__)
+ISOLATED = os.environ.get('ACTION314_ISOLATED', '1') == '1'
+os.environ.setdefault('CUDA_MODULE_LOADING', 'LAZY')  # set before this process creates its CUDA context
 SIZE = 416
 FRAME_BYTES = SIZE * SIZE * 3
-MAX_BATCH = int(os.environ.get('ACTION314_GPU_MAX_BATCH', '8'))
+MAX_BATCH = int(os.environ.get('ACTION314_GPU_MAX_BATCH', '2' if os.environ.get('ACTION314_ISOLATED', '1') == '1' else '8'))
 DEFER = os.environ.get('ACTION314_DEFER_BUILD', '1') == '1'   # serve pose + shipped engines first, build the rest in the background
 MIN_BUILD_MB = int(os.environ.get('ACTION314_TRT_MIN_MB', '900'))
 DEFER_FETCH = set(filter(None, os.environ.get('ACTION314_DEFER_FETCH', 'clip').split(',')))
@@ -45,7 +52,8 @@ def trt_version():
 
 
 def shm_dir(tag):
-    d = Path(os.environ.get('ACTION314_TRT_CACHE', '/dev/shm/action314_gpu')) / ('%s-%s' % (trt_version(), tag))
+    base = os.environ.get('ACTION314_TRT_CACHE') or ('/tmp/action314_gpu' if ISOLATED else '/dev/shm/action314_gpu')
+    d = Path(base) / ('%s-%s' % (trt_version(), tag))
     d.mkdir(parents=True, exist_ok=True)
     try: os.chmod(d, 0o777)
     except OSError: pass
@@ -77,7 +85,7 @@ def build_engine(onnx_path, plan_path, opt_level=3, workspace_mb=512):
     if any(d < 0 for d in shape):
         rest = tuple(d if d > 0 else SIZE for d in shape[1:])
         prof = b.create_optimization_profile()
-        prof.set_shape(inp.name, (1,) + rest, (4,) + rest, (MAX_BATCH,) + rest); cfg.add_optimization_profile(prof)
+        prof.set_shape(inp.name, (1,) + rest, (min(4, MAX_BATCH),) + rest, (MAX_BATCH,) + rest); cfg.add_optimization_profile(prof)
     plan = b.build_serialized_network(net, cfg)
     if plan is None: raise RuntimeError('engine build returned None: %s' % onnx_path)
     tmp = str(plan_path) + '.%d' % os.getpid()
@@ -99,7 +107,8 @@ class Server:
             from tensorrt_runtime import TensorRTEngine
         self.pose = TensorRTEngine(pose_plan)
         x = np.zeros((1, 3, SIZE, SIZE), np.float32)
-        for bs in (1, 2, 4, MAX_BATCH): self.pose.infer(np.repeat(x, bs, 0))
+        for bs in sorted({1, 2, 4, MAX_BATCH}):
+            if bs <= MAX_BATCH: self.pose.infer(np.repeat(x, bs, 0))
         self.extra = []
         self._engine_cls = TensorRTEngine
         for p in extra_plans: self.extra.append(self._load(p) if p is not None else None)

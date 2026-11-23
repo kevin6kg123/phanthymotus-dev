@@ -67,7 +67,7 @@ class MP4Recognizer:
 
     def _join_gpu(self):
         c = self.config
-        names = [c['pose_model']] + [x['file'] for x in c['classifiers']] + ([c['rgb']['file']] if c.get('rgb') else []) + ([c['rgb2']['file']] if c.get('rgb') and c.get('rgb2') else [])
+        names = [c['pose_model']] + [x['file'] for x in c['classifiers']] + ([c['rgb']['file']] if c.get('rgb') and self.has_rgb else []) + ([c['rgb2']['file']] if c.get('rgb') and c.get('rgb2') else [])
         tag = hashlib.sha256(''.join(c['model_sha256'][n] for n in names).encode()).hexdigest()[:12]
         listed = model_store.spec()['files']
         try:

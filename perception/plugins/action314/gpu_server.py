@@ -22,6 +22,34 @@ import numpy as np
 log = logging.getLogger(__name__)
 ISOLATED = os.environ.get('ACTION314_ISOLATED', '1') == '1'
 os.environ.setdefault('CUDA_MODULE_LOADING', 'LAZY')  # set before this process creates its CUDA context
+
+
+def _libc():
+    try:
+        import ctypes
+        return ctypes.CDLL('libc.so.6')
+    except Exception:
+        return None
+
+
+def trim_memory():
+    """return freed heap pages to the OS (glibc)."""
+    lc = _libc()
+    try:
+        if lc is not None: lc.malloc_trim(0)
+    except Exception: pass
+
+
+if ISOLATED:
+    try:
+        _lc = _libc()
+        if _lc is not None: _lc.mallopt(-8, 2)  # M_ARENA_MAX = 2
+    except Exception: pass
+
+    def _trim_loop():
+        while True:
+            time.sleep(10.0); trim_memory()
+    threading.Thread(target=_trim_loop, daemon=True, name='action314-trim').start()
 SIZE = 416
 FRAME_BYTES = SIZE * SIZE * 3
 MAX_BATCH = int(os.environ.get('ACTION314_GPU_MAX_BATCH', '2' if os.environ.get('ACTION314_ISOLATED', '1') == '1' else '8'))
@@ -269,6 +297,21 @@ def start_or_join(models, tag, on_ready, on_error, status=None):
                     time.sleep(0.5); continue
                 # owner: the flock stays held for this process's lifetime and is released by the kernel on exit
                 plans = [d / (name + '.plan') for name, _, _ in models]
+                startlk = None
+                if ISOLATED:
+                    try:
+                        startlk = open('/dev/shm/.action314_startup.lock', 'a+')
+                        try: os.chmod('/dev/shm/.action314_startup.lock', 0o666)
+                        except OSError: pass
+                        t_l = time.time()
+                        while True:
+                            try: fcntl.flock(startlk, fcntl.LOCK_EX | fcntl.LOCK_NB); break
+                            except BlockingIOError:
+                                if time.time() - t_l > float(os.environ.get('ACTION314_STARTUP_LOCK_S', '90')): break
+                                time.sleep(0.2)
+                        status('start-up lock after %.1fs' % (time.time() - t_l))
+                    except Exception as e:
+                        startlk = None; status('start-up lock unavailable: %s' % str(e)[:80])
                 for attempt in (0, 1):
                     for (name, get_onnx, get_plan), plan in zip(models, plans):
                         if not plan.exists() and attempt == 0 and name in DEFER_FETCH and plan != plans[0]:
@@ -276,7 +319,9 @@ def start_or_join(models, tag, on_ready, on_error, status=None):
                         if not plan.exists() and attempt == 0:
                             try: shipped = get_plan()
                             except Exception as e: shipped = None; status('shipped engine %s unavailable: %s' % (name, str(e)[:200]))
-                            if shipped and Path(shipped).is_file():
+                            if shipped and Path(shipped).is_file() and ISOLATED:
+                                plans[plans.index(plan)] = plan = Path(shipped); status('using shipped engine %s (read-only cache file)' % name)
+                            elif shipped and Path(shipped).is_file():
                                 try: os.replace(shipped, plan)  # same /dev/shm filesystem: move, no second copy in RAM
                                 except OSError: shutil.copyfile(shipped, str(plan) + '.tmp'); os.replace(str(plan) + '.tmp', plan)
                                 status('using shipped engine %s' % name)
@@ -286,11 +331,17 @@ def start_or_join(models, tag, on_ready, on_error, status=None):
                     except Exception as e:
                         status('engine load failed (%s: %s); rebuilding on this host' % (type(e).__name__, str(e)[:200]))
                         for p in plans:
+                            if ISOLATED and Path(p).parent != d: continue  # shared read-only cache file: never delete
                             try: p.unlink()
                             except FileNotFoundError: pass
                         if attempt: raise
                 start_or_join.server = server
-                if os.environ.get('ACTION314_SHM_HYGIENE', '1') == '1':
+                if startlk is not None:
+                    import gc; gc.collect(); trim_memory()
+                    try: fcntl.flock(startlk, fcntl.LOCK_UN); startlk.close()
+                    except Exception: pass
+                    status('start-up lock released (engines loaded)')
+                if os.environ.get('ACTION314_SHM_HYGIENE', '1') == '1' and not ISOLATED:
                     freed = 0
                     for i, p in enumerate(plans):
                         if (i == 0 or server.extra[i - 1] is not None) and p.exists():

@@ -20,7 +20,7 @@ FRAME_BYTES = SIZE * SIZE * 3
 MAX_BATCH = int(os.environ.get('ACTION314_GPU_MAX_BATCH', '8'))
 DEFER = os.environ.get('ACTION314_DEFER_BUILD', '1') == '1'   # serve pose + shipped engines first, build the rest in the background
 MIN_BUILD_MB = int(os.environ.get('ACTION314_TRT_MIN_MB', '900'))
-DEFER_FETCH = set(filter(None, os.environ.get('ACTION314_DEFER_FETCH', 'clip').split(',')))
+DEFER_FETCH = set(filter(None, os.environ.get('ACTION314_DEFER_FETCH', 'clip,rtmw_kp4').split(',')))
 
 
 def _mem_avail_mb():

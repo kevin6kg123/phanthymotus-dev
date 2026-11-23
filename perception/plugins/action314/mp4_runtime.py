@@ -181,7 +181,11 @@ class MP4Recognizer:
                 from rtmw_branch import RTMWBranch
             h = self.config['hand']; base = len(self.config['classifiers']) + 2
             npz = model_store.ensure_files([h['mlp']], self._status) / h['mlp']
-            self._hand = RTMWBranch(npz, lambda x: self._rc().model(base, x))
+            def _net(x, base=base):
+                import struct
+                buf = np.ascontiguousarray(x, np.float32).tobytes()
+                return self._rc()._call(b'M' + bytes([base]) + struct.pack('<I', len(buf)) + buf)
+            self._hand = RTMWBranch(npz, _net)
         return self._hand
 
     def hand_crops(self, frame, pose):

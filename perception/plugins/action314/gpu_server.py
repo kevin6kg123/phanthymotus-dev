@@ -40,6 +40,23 @@ def trim_memory():
     except Exception: pass
 
 
+def mem_snapshot():
+    """own RSS / peak / anon / file, host MemAvailable, cgroup usage - MB (diagnostics only)."""
+    d = {}
+    try:
+        for l in open('/proc/self/status'):
+            if l.startswith(('VmRSS', 'VmHWM', 'RssAnon', 'RssFile')): k, v = l.split(':'); d[k] = int(v.split()[0]) // 1024
+    except Exception: pass
+    try:
+        for l in open('/proc/meminfo'):
+            if l.startswith('MemAvailable:'): d['MemAvail'] = int(l.split()[1]) // 1024
+    except Exception: pass
+    for p in ('/sys/fs/cgroup/memory.current', '/sys/fs/cgroup/memory/memory.usage_in_bytes'):
+        try: d['cgroup'] = int(open(p).read().strip()) >> 20; break
+        except Exception: pass
+    return d
+
+
 if ISOLATED:
     try:
         _lc = _libc()
@@ -47,8 +64,12 @@ if ISOLATED:
     except Exception: pass
 
     def _trim_loop():
+        k = 0
         while True:
-            time.sleep(10.0); trim_memory()
+            time.sleep(10.0); trim_memory(); k += 1
+            if k % 3 == 0:
+                try: log.warning('[action314][MEM] pid=%d %s', os.getpid(), mem_snapshot())
+                except Exception: pass
     threading.Thread(target=_trim_loop, daemon=True, name='action314-trim').start()
 SIZE = 416
 FRAME_BYTES = SIZE * SIZE * 3
@@ -83,6 +104,8 @@ def shm_dir(tag):
     base = os.environ.get('ACTION314_TRT_CACHE') or ('/tmp/action314_gpu' if ISOLATED else '/dev/shm/action314_gpu')
     d = Path(base) / ('%s-%s' % (trt_version(), tag))
     d.mkdir(parents=True, exist_ok=True)
+    if not getattr(shm_dir, 'logged', False):
+        shm_dir.logged = True; log.warning('[action314][ISO] isolated=%s server_dir=%s pid=%d', ISOLATED, d, os.getpid())
     try: os.chmod(d, 0o777)
     except OSError: pass
     return d
@@ -340,7 +363,7 @@ def start_or_join(models, tag, on_ready, on_error, status=None):
                     import gc; gc.collect(); trim_memory()
                     try: fcntl.flock(startlk, fcntl.LOCK_UN); startlk.close()
                     except Exception: pass
-                    status('start-up lock released (engines loaded)')
+                    status('start-up lock released (engines loaded)'); log.warning('[action314][MEM] engines loaded pid=%d %s', os.getpid(), mem_snapshot())
                 if os.environ.get('ACTION314_SHM_HYGIENE', '1') == '1' and not ISOLATED:
                     freed = 0
                     for i, p in enumerate(plans):

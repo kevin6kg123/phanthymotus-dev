@@ -27,6 +27,11 @@
       "size": 34617846,
       "lazy": true
     },
+    "trt/10.4.0/pose.plan": {
+      "sha256": "4c6484c71eb9e7aabbae1d88872caba7fddd39cc599f62ee46555493a619eeea",
+      "size": 45914356,
+      "lazy": true
+    },
     "trt/10.4.0/rgb.plan": {
       "sha256": "f4e0cd5bdee9cb5ce5a2ce15053c25305d3daff27d1bb9f90fec1c8841af2479",
       "size": 8659588,

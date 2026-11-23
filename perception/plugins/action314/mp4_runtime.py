@@ -46,12 +46,19 @@ class MP4Recognizer:
         self.counters = {'gpu_frames': 0, 'cpu_frames': 0, 'gpu_errors': 0}; self.gpu_log = []
         threads = int(os.environ.get('ACTION314_CPU_THREADS', str(c.get('cpu_threads', 1))))
         self._bodies = None
-        self.cpu_front = _OrtModel(self.root / c['pose_model_cpu'], threads) if c.get('pose_model_cpu') else None
+        self._cpu_front = None; self._cpu_threads = threads  # created lazily (cpu_front), released once the GPU answers
         self.has_rgb = bool(c.get('rgb')) and os.environ.get('ACTION314_RGB', '1') == '1'
         labels = [x['activity'] for x in c['labels']]
         self.none_index = labels.index('none') if 'none' in labels and os.environ.get('ACTION314_ALLOW_NONE') != '1' else None
         if os.environ.get('ACTION314_DEVICE', 'gpu').lower() != 'cpu': self._join_gpu()
         else: self.device_errors['gpu'] = 'disabled by ACTION314_DEVICE=cpu'
+
+    @property
+    def cpu_front(self):
+        """CPU warm-up pose model, only while this instance's GPU server is not ready yet."""
+        if self._cpu_front is None and self.config.get('pose_model_cpu'):
+            self._cpu_front = _OrtModel(self.root / self.config['pose_model_cpu'], self._cpu_threads); self._status('cpu warm-up model created')
+        return self._cpu_front
 
     # ---- GPU attachment -------------------------------------------------------------------
     def _status(self, msg):
@@ -111,6 +118,7 @@ class MP4Recognizer:
             try:
                 x, geo = letterbox_u8(frame)
                 out = g(x[None]); self.counters['gpu_frames'] += 1
+                if self._cpu_front is not None: self._cpu_front = None; self._status('cpu warm-up model released')
                 return decode_pose(out, geo)
             except Exception as e:
                 self.counters['gpu_errors'] += 1; self.device_errors['gpu_last'] = type(e).__name__ + ': ' + str(e)[:200]

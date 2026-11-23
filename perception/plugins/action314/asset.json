@@ -1,7 +1,7 @@
 {
-  "version": "v40",
+  "version": "v43",
   "base_urls": [
-    "http://172.28.4.81:34567/i-liukejun/models/action314/v40"
+    "http://172.28.4.81:34567/i-liukejun/models/action314/v43"
   ],
   "files": {
     "clip.onnx": {
@@ -23,9 +23,18 @@
       "size": 12957014,
       "lazy": true
     },
+    "rtmw_kp4.onnx": {
+      "sha256": "d30665f1781b450beba3db9a0a026afc644a18f22dbebbafa3ae026e1f673aee",
+      "size": 229321276,
+      "lazy": true
+    },
+    "rtmw_seq.npz": {
+      "sha256": "cabe57c5724b6fee98230ad160fe8bb78f70e18751d72d0f014a6e6695181df3",
+      "size": 6776132
+    },
     "runtime.json": {
-      "sha256": "55660b373b18c14e3aee748767230938b25ccd6261507e0ce8bf7a3b832fc877",
-      "size": 23632
+      "sha256": "251bd8cc59b9840916b42b50e9b2d91fcd8b98dd49913b43a9b37776816ca01d",
+      "size": 23950
     },
     "skel6.onnx": {
       "sha256": "a4c61863a31fc60792d3753a3435106f81cee3e407d8464c59bce82f6b7fd64f",

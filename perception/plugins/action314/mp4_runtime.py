@@ -48,6 +48,7 @@ class MP4Recognizer:
         self._bodies = None
         self.cpu_front = _OrtModel(self.root / c['pose_model_cpu'], threads) if c.get('pose_model_cpu') else None
         self.has_rgb = bool(c.get('rgb')) and os.environ.get('ACTION314_RGB', '1') == '1'
+        self.has_hand = bool(c.get('hand')) and bool(c.get('rgb2')) and self.has_rgb and os.environ.get('ACTION314_HAND', '1') == '1'; self._hand = None
         labels = [x['activity'] for x in c['labels']]
         self.none_index = labels.index('none') if 'none' in labels and os.environ.get('ACTION314_ALLOW_NONE') != '1' else None
         if os.environ.get('ACTION314_DEVICE', 'gpu').lower() != 'cpu': self._join_gpu()
@@ -60,7 +61,7 @@ class MP4Recognizer:
 
     def _join_gpu(self):
         c = self.config
-        names = [c['pose_model']] + [x['file'] for x in c['classifiers']] + ([c['rgb']['file']] if c.get('rgb') else []) + ([c['rgb2']['file']] if c.get('rgb') and c.get('rgb2') else [])
+        names = [c['pose_model']] + [x['file'] for x in c['classifiers']] + ([c['rgb']['file']] if c.get('rgb') else []) + ([c['rgb2']['file']] if c.get('rgb') and c.get('rgb2') else []) + ([c['hand']['net']] if c.get('rgb') and c.get('rgb2') and c.get('hand') else [])
         tag = hashlib.sha256(''.join(c['model_sha256'][n] for n in names).encode()).hexdigest()[:12]
         listed = model_store.spec()['files']
         try:
@@ -145,14 +146,65 @@ class MP4Recognizer:
         pr = self.rgb_probs(poses, frames) if frames else None
         return self.fuse(prob, pr)
 
-    def fuse(self, prob, pr):
+    def fuse(self, prob, pr, hq=None):
         prob = prob.copy()
         if pr is not None:
             r = self.config['rgb']; a = np.full(prob.shape, float(r.get('weight', 0.2)))
             for g in r.get('groups', []): a[np.asarray(g['classes'], int)] = float(g['weight'])
             prob = (1 - a) * prob + a * pr
         if self.none_index is not None: prob[self.none_index] = 0.0
-        return prob / max(prob.sum(), 1e-12)
+        prob = prob / max(prob.sum(), 1e-12)
+        if hq is not None and self.config.get('hand'):
+            try:
+                try:
+                    from .rtmw_branch import redistribute
+                except ImportError:
+                    from rtmw_branch import redistribute
+                h = self.config['hand']; prob = redistribute(prob, hq, float(h.get('b', 0.5)), h.get('classes', [59, 60, 84, 85, 86, 87, 88]))
+                self.counters['hand_used'] = self.counters.get('hand_used', 0) + 1
+            except Exception as e: self.device_errors['hand_fuse'] = type(e).__name__ + ': ' + str(e)[:200]
+        return prob
+
+    def _rc(self):
+        g = self.gpu
+        if g is None: raise RuntimeError('gpu not ready')
+        rc = getattr(self, '_rgb_client', None)
+        if rc is None or getattr(self, '_rgb_client_of', None) is not g:
+            rc = gpu_server.Client(g.sock_path, timeout=getattr(g, 'timeout', 10.0)); self._rgb_client = rc; self._rgb_client_of = g
+        return rc
+
+    def _hand_branch(self):
+        if self._hand is None:
+            try:
+                from .rtmw_branch import RTMWBranch
+            except ImportError:
+                from rtmw_branch import RTMWBranch
+            h = self.config['hand']; base = len(self.config['classifiers']) + 2
+            npz = model_store.ensure_files([h['mlp']], self._status) / h['mlp']
+            self._hand = RTMWBranch(npz, lambda x: self._rc().model(base, x))
+        return self._hand
+
+    def hand_crops(self, frame, pose):
+        try:
+            from .rtmw_branch import person_crop
+        except ImportError:
+            from rtmw_branch import person_crop
+        return person_crop(frame, pose)
+
+    def hand_process(self, crops):
+        if not self.has_hand or self.gpu is None: return None
+        try:
+            r = self._hand_branch().process(crops); self.counters['gpu_hand'] = self.counters.get('gpu_hand', 0) + 1; return r
+        except Exception as e:
+            self.device_errors['gpu_hand'] = type(e).__name__ + ': ' + str(e)[:200]; return None
+
+    def hand_probs(self, kps):
+        try:
+            q = self._hand_branch().probs(kps)
+            if q is not None: self.counters['hand_q'] = self.counters.get('hand_q', 0) + 1
+            return q
+        except Exception as e:
+            self.device_errors['hand_probs'] = type(e).__name__ + ': ' + str(e)[:200]; return None
 
     def rgb_probs(self, poses, frames):
         g = self.gpu

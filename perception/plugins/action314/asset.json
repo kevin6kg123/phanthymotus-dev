@@ -1,7 +1,7 @@
 {
-  "version": "v44",
+  "version": "v44d",
   "base_urls": [
-    "http://172.28.4.81:34567/i-liukejun/models/action314/v44"
+    "http://172.28.4.81:34567/i-liukejun/models/action314/v44d"
   ],
   "files": {
     "pose.onnx": {
@@ -19,27 +19,27 @@
       "lazy": true
     },
     "runtime.json": {
-      "sha256": "767855c6fc610d07c0156bd054e177e599f8deab7140ea72f60a1f0aab707a97",
-      "size": 23270
+      "sha256": "58498ad8041047da5a7927fe0b6c880aec78d9ea79d7e712d342accc3f94e83c",
+      "size": 23271
     },
-    "skel6.onnx": {
-      "sha256": "a4c61863a31fc60792d3753a3435106f81cee3e407d8464c59bce82f6b7fd64f",
-      "size": 34617846,
+    "skel2.onnx": {
+      "sha256": "1072b164bf5798de9f991d84e0cfa85e9883325528e9db2959ebe77ca765adb4",
+      "size": 11538136,
       "lazy": true
     },
     "trt/10.4.0/pose.plan": {
-      "sha256": "4c6484c71eb9e7aabbae1d88872caba7fddd39cc599f62ee46555493a619eeea",
-      "size": 45914356,
+      "sha256": "1a85c8ed8f6009c95b0e0a86b050238b1ed8401f3df66dc0a2ecc93e998cc044",
+      "size": 46802548,
       "lazy": true
     },
     "trt/10.4.0/rgb.plan": {
-      "sha256": "f4e0cd5bdee9cb5ce5a2ce15053c25305d3daff27d1bb9f90fec1c8841af2479",
-      "size": 8659588,
+      "sha256": "8ebf851c2e1a842798b6a2c2e9cb276a8bbb4b6ccba82a91f82478ffac0a43a3",
+      "size": 14703372,
       "lazy": true
     },
-    "trt/10.4.0/skel6.plan": {
-      "sha256": "4e507566cd6e9692ac7f80cec0e8e84d0cb9c1d6b1096ea34878f3b56a719b19",
-      "size": 30191884,
+    "trt/10.4.0/skel2.plan": {
+      "sha256": "ccaa139fb3f63806fac61144fde7cefa9a26caa7fced787d2985813370e00ed5",
+      "size": 9006356,
       "lazy": true
     }
   },

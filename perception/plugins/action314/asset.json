@@ -56,6 +56,11 @@
       "size": 8659588,
       "lazy": true
     },
+    "trt/10.4.0/rtmw_kp4.plan": {
+      "sha256": "f1a3e7ea35bf9c6d8a6dd3ab3cdfdf474a520711e1ca808600bacfc07dec0cb5",
+      "size": 127987620,
+      "lazy": true
+    },
     "trt/10.4.0/skel6.plan": {
       "sha256": "4e507566cd6e9692ac7f80cec0e8e84d0cb9c1d6b1096ea34878f3b56a719b19",
       "size": 30191884,

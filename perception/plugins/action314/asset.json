@@ -1,7 +1,7 @@
 {
-  "version": "v45",
+  "version": "v45b",
   "base_urls": [
-    "http://172.28.4.81:34567/i-liukejun/models/action314/v45"
+    "http://172.28.4.81:34567/i-liukejun/models/action314/v45b"
   ],
   "files": {
     "clip.onnx": {
@@ -24,8 +24,8 @@
       "lazy": true
     },
     "runtime.json": {
-      "sha256": "260605864a58b21f0b7b7ed1fd566b83a531b0af35f132359f797585d71aa5ce",
-      "size": 23632
+      "sha256": "b0f7b0fabb7b37332371e6863789f4490b619c70fb5ac6b7768585531e98cfad",
+      "size": 23605
     },
     "skel6.onnx": {
       "sha256": "a4c61863a31fc60792d3753a3435106f81cee3e407d8464c59bce82f6b7fd64f",

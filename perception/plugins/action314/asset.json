@@ -1,12 +1,12 @@
 {
-  "version": "v46c",
+  "version": "v47a",
   "base_urls": [
-    "http://172.28.4.81:34567/i-liukejun/models/action314/v46c"
+    "http://172.28.4.81:34567/i-liukejun/models/action314/v47a"
   ],
   "files": {
     "clip.onnx": {
-      "sha256": "8e458696648bea3971b20f599ac2d457f546a4d567d6a1ceb333f73c02f56fc8",
-      "size": 186314870,
+      "sha256": "06482fe8107734d6a641415a5146bb466ed752b13fec5d007a1449f490a0702a",
+      "size": 188018971,
       "lazy": true
     },
     "pose.onnx": {
@@ -24,7 +24,7 @@
       "lazy": true
     },
     "runtime.json": {
-      "sha256": "c810a0f013116da1125c4169f4fef009720e8741a0e7c96b56869338371de6b2",
+      "sha256": "73d7bef01de68afe508a2126b4e4a3c381d50bcc1a63f306df123f6d70c8c34e",
       "size": 23605
     },
     "skel6.onnx": {
@@ -33,8 +33,8 @@
       "lazy": true
     },
     "trt/10.4.0/clip.plan": {
-      "sha256": "320ef2c90280ef49ca6a3844ebe0b4a0aa47900f9bb3195642d7521898690341",
-      "size": 187263068,
+      "sha256": "c2d4643215e363be3a3f16be52b9057d4900077a8bf282df430f185d0aefb3f5",
+      "size": 188907220,
       "lazy": true
     },
     "trt/10.4.0/pose.plan": {

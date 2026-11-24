@@ -34,7 +34,7 @@ def _ok(path, sha):
 
 def _cache_root(s):
     tag = hashlib.sha256(json.dumps(s['files'], sort_keys=True).encode()).hexdigest()[:12]
-    d = Path(os.environ.get('ACTION314_MODEL_CACHE', '/dev/shm/action314_models')) / tag
+    d = Path(os.environ.get('ACTION314_MODEL_CACHE', '/tmp/action314_models')) / tag
     d.mkdir(parents=True, exist_ok=True)
     try: os.chmod(d.parent, 0o777); os.chmod(d, 0o777)
     except OSError: pass
@@ -68,6 +68,15 @@ def clean_stale(parent, keep, min_age=None):
     return gone
 
 
+def drop_cache(path):
+    """release a file's (clean) pages from the page cache."""
+    try:
+        fd = os.open(str(path), os.O_RDONLY)
+        try: os.posix_fadvise(fd, 0, 0, os.POSIX_FADV_DONTNEED)
+        finally: os.close(fd)
+    except Exception: pass
+
+
 def _fetch(name, sha, size, dest, s):
     urls = [u for u in os.environ.get('ACTION314_MODEL_URLS', '').split(',') if u] or s['base_urls']
     errors = []
@@ -85,7 +94,9 @@ def _fetch(name, sha, size, dest, s):
                     n += len(b)
                     if n > size: raise ValueError('larger than declared size')
                     f.write(b)
+                f.flush(); os.fsync(f.fileno())
             if digest(tmp) != sha: raise ValueError('sha256 mismatch')
+            drop_cache(tmp)
             os.replace(tmp, dest)
             return '%s (%.1f MB, %.1fs)' % (url, size / 1e6, time.time() - t)
         except Exception as e:

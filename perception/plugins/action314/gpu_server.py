@@ -229,6 +229,14 @@ def _build_child(onnx, plan, status):
     status('built %s in %.1fs' % (Path(plan).name, time.time() - t0))
 
 
+def _drop(path):
+    try:
+        fd = os.open(str(path), os.O_RDONLY)
+        try: os.posix_fadvise(fd, 0, 0, os.POSIX_FADV_DONTNEED)
+        finally: os.close(fd)
+    except Exception: pass
+
+
 def start_or_join(models, tag, on_ready, on_error, status=None):
     """models: [(name, get_onnx_path, get_shipped_plan)], callables returning a Path or None (lazy download).
     The first is the pose model (dynamic batch), the rest are static extra engines. Runs in the background; on_ready(Client, role) once the host server answers."""
@@ -261,15 +269,14 @@ def start_or_join(models, tag, on_ready, on_error, status=None):
                 # owner: the flock stays held for this process's lifetime and is released by the kernel on exit
                 plans = [d / (name + '.plan') for name, _, _ in models]
                 for attempt in (0, 1):
-                    for (name, get_onnx, get_plan), plan in zip(models, plans):
+                    for _k, ((name, get_onnx, get_plan), plan) in enumerate(zip(models, plans)):
                         if not plan.exists() and attempt == 0 and name in DEFER_FETCH and plan != plans[0]:
                             status('deferring engine %s until the server is up' % name); continue
                         if not plan.exists() and attempt == 0:
                             try: shipped = get_plan()
                             except Exception as e: shipped = None; status('shipped engine %s unavailable: %s' % (name, str(e)[:200]))
                             if shipped and Path(shipped).is_file():
-                                try: os.replace(shipped, plan)  # same /dev/shm filesystem: move, no second copy in RAM
-                                except OSError: shutil.copyfile(shipped, str(plan) + '.tmp'); os.replace(str(plan) + '.tmp', plan)
+                                plans[_k] = plan = Path(shipped)  # deserialize straight from the verified cache file (disk)
                                 status('using shipped engine %s' % name)
                         if not plan.exists() and (plan == plans[0] or not DEFER): _build_child(get_onnx(), plan, status)
                     try:
@@ -285,9 +292,9 @@ def start_or_join(models, tag, on_ready, on_error, status=None):
                     freed = 0
                     for i, p in enumerate(plans):
                         if (i == 0 or server.extra[i - 1] is not None) and p.exists():
-                            try: freed += p.stat().st_size; p.unlink()
+                            try: freed += p.stat().st_size; _drop(p); p.unlink()
                             except OSError: pass
-                    status('freed %.0f MB of loaded engine files from /dev/shm' % (freed / 1e6))
+                    status('freed %.0f MB of loaded engine files' % (freed / 1e6))
                 status('GPU server serving %s' % sock)
                 on_ready(Client(sock), 'owner')
                 for i, ((name, get_onnx, get_plan), plan) in enumerate(zip(models[1:], plans[1:])):
@@ -302,13 +309,12 @@ def start_or_join(models, tag, on_ready, on_error, status=None):
                             try: shipped = get_plan()
                             except Exception as e: shipped = None; status('shipped engine %s unavailable: %s' % (name, str(e)[:200]))
                             if shipped and Path(shipped).is_file():
-                                try: os.replace(shipped, plan)
-                                except OSError: shutil.copyfile(shipped, str(plan) + '.tmp'); os.replace(str(plan) + '.tmp', plan)
+                                plan = Path(shipped)
                                 status('fetched deferred engine %s' % name)
                         if not plan.exists(): _build_child(get_onnx(), plan, status)
                         server.add_extra(i, plan); status('hot-loaded engine %s' % name)
                         if os.environ.get('ACTION314_SHM_HYGIENE', '1') == '1':
-                            try: plan.unlink()
+                            try: _drop(plan); plan.unlink()
                             except OSError: pass
                     except Exception as e:
                         status('deferred engine %s failed: %s' % (name, str(e)[:200]))

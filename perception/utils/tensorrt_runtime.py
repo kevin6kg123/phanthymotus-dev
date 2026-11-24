@@ -204,7 +204,9 @@ def read_engine_file(path: str | Path) -> tuple[dict, bytes]:
     Plain TensorRT engines are returned unchanged with `{}` metadata.
     """
     try:
-        serialized = Path(path).read_bytes()
+        import mmap
+        with open(path, 'rb') as _f:
+            serialized = memoryview(mmap.mmap(_f.fileno(), 0, access=mmap.ACCESS_READ))  # file-backed pages, no anonymous copy
     except OSError as error:
         raise TensorRTError(f"TensorRT engine could not be read: {path}") from error
     if len(serialized) < 8:
@@ -213,7 +215,7 @@ def read_engine_file(path: str | Path) -> tuple[dict, bytes]:
     if metadata_size <= 0 or metadata_size > min(len(serialized) - 4, 1 << 20):
         return {}, serialized
     try:
-        metadata = json.loads(serialized[4 : 4 + metadata_size].decode("utf-8"))
+        metadata = json.loads(bytes(serialized[4 : 4 + metadata_size]).decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError):
         return {}, serialized
     if not isinstance(metadata, dict) or "task" not in metadata:
